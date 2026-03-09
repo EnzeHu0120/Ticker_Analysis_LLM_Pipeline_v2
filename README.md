@@ -36,11 +36,16 @@ A pipeline that pulls fundamental and price data for a given ticker, engineers f
   pip install -r requirements.txt
   ```
 
-- **Secrets (never commit):**  
-  Copy `.env.example` to `.env` and set your Gemini API key:
+- **Secrets / LLM config (never commit `.env`):**  
+  Copy `.env.example` to `.env` and choose your LLM backend:
   ```bash
   cp .env.example .env
-  # Edit .env: set GEMINI_API_KEY=your_key
+  # Edit .env and set:
+  #   LLM_BACKEND=gemini        # or: gemini-vertex, openai
+  #   GEMINI_MODEL=...          # e.g. gemini-3.1-pro-preview
+  #   GEMINI_API_KEY=...        # if using Gemini API
+  #   GOOGLE_CLOUD_PROJECT=...  # if using Vertex AI
+  #   OPENAI_API_KEY=...        # if using OpenAI gateway
   ```
   `.env` is in `.gitignore`; only `.env.example` (no real keys) is in the repo.
 
@@ -87,6 +92,7 @@ The pipeline computes the following indicators from OHLCV price history via the 
 | **`fundamental_pipeline.py`** | **Fundamental data source** — Yahoo Finance annual/quarterly fetch, statement merge, anchor_dates, derived metrics |
 | **`technical_pipeline.py`** | **Technical data source** — ta-based indicator computation, technical summary for LLM |
 | **`llm_pipeline.py`** | **LLM layer** — Pulls fundamental + technical data, builds prompts, runs 1A/1B/1C + synthesis, writes JSON report |
+| **`llm_config.py`** | Central LLM configuration (backend/model/project); loaded by `llm_pipeline.py` |
 | `.env.example` | Template for local `.env` (copy to `.env`, add `GEMINI_API_KEY`) |
 | `requirements.txt` | Python dependencies |
 | `outputs/` | Generated reports (gitignored) |

@@ -1,5 +1,5 @@
 """
-technical_pipeline.py — Technical data source (standalone module).
+technical_pipeline.py — Technical data source.
 
 Uses the ta library (bukosabino/ta) to compute technical indicators from OHLCV
 and build a high-info-density summary for the LLM.

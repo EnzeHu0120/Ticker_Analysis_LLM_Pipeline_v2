@@ -1,5 +1,5 @@
 """
-llm_pipeline.py — LLM prompt runner (standalone module).
+llm_pipeline.py — LLM prompt runner.
 
 Pulls fundamental data (fundamental_pipeline) and technical data (technical_pipeline),
 builds user prompts, runs Gemini/OpenAI for 1A/1B/1C + synthesis (Prompt 2), outputs JSON report.
@@ -31,6 +31,8 @@ import yfinance as yf
 from google import genai
 from google.genai import types
 from openai import OpenAI
+
+from llm_config import load_llm_config
 
 # -------------------------
 # Load .env from project dir (secrets stay local, not in repo)
@@ -272,6 +274,8 @@ and produce a unified investment outlook with a price target matrix and a single
 {OUTPUT_FROM_PROMPT_1C}
 
 Return a JSON object with this exact schema. The "rating" field is MANDATORY and must be exactly one of: Overweight | Equal-weight | Hold | Underweight | Reduce.
+The "price_target_matrix" array MUST contain exactly three objects, one for each scenario: Bear, Consensus, Bull (in that order). Each scenario MUST be analyzed
+independently, with its own price_target_range and key_assumption; you may NOT merge scenarios into a single combined row.
 {{
  "report_metadata": {{
    "company": string,
@@ -298,7 +302,19 @@ Return a JSON object with this exact schema. The "rating" field is MANDATORY and
  ],
  "price_target_matrix": [
    {{
-     "scenario": "Bear | Consensus | Bull",
+    "scenario": "Bear",
+    "timeline": string,
+    "price_target_range": {{ "low": number, "high": number }},
+    "key_assumption": string
+  }},
+  {{
+    "scenario": "Consensus",
+    "timeline": string,
+    "price_target_range": {{ "low": number, "high": number }},
+    "key_assumption": string
+  }},
+  {{
+    "scenario": "Bull",
      "timeline": string,
      "price_target_range": {{ "low": number, "high": number }},
      "key_assumption": string
@@ -388,6 +404,27 @@ def ensure_outputs_dir() -> Path:
     return out_dir
 
 
+def build_unique_output_path(ticker: str, analysis_date: str) -> Path:
+    """
+    Build an outputs path that does NOT overwrite previous runs.
+    We include the current time to the minute in the filename, and if a file
+    still exists (multiple runs within the same minute), we append a suffix.
+
+    Examples (for ticker=T, analysis_date=2026-03-09, time ~14:37):
+    - T_2026-03-09_1437_report.json
+    - T_2026-03-09_1437_report_run2.json
+    """
+    out_dir = ensure_outputs_dir()
+    time_tag = dt.datetime.now().strftime("%H%M")
+    base = f"{ticker}_{analysis_date}_{time_tag}_report"
+    candidate = out_dir / f"{base}.json"
+    run_idx = 2
+    while candidate.exists():
+        candidate = out_dir / f"{base}_run{run_idx}.json"
+        run_idx += 1
+    return candidate
+
+
 # Canonical ratings: Overweight | Equal-weight | Hold | Underweight | Reduce
 RATING_ALIASES = {
     "overweight": "Overweight",
@@ -424,6 +461,38 @@ def normalize_rating(report: Dict[str, Any]) -> None:
     report["rating"] = canonical
     if not report.get("rating_rationale"):
         report["rating_rationale"] = "Combined fundamental and technical synthesis."
+
+
+def normalize_price_target_matrix(report: Dict[str, Any]) -> None:
+    """
+    Light normalization for price_target_matrix:
+    - Keep at most one entry per scenario (Bear / Consensus / Bull)
+    - Order them as [Bear, Consensus, Bull] if present
+
+    It does NOT fabricate new scenarios or copy assumptions; each regime
+    must be analyzed separately by the LLM.
+    """
+    matrix = report.get("price_target_matrix")
+    if not isinstance(matrix, list) or not matrix:
+        return
+
+    scenarios = ["Bear", "Consensus", "Bull"]
+    by_scenario: Dict[str, Dict[str, Any]] = {}
+
+    for row in matrix:
+        if not isinstance(row, dict):
+            continue
+        scen = str(row.get("scenario", ""))
+        if scen in scenarios and scen not in by_scenario:
+            by_scenario[scen] = row
+
+    if not by_scenario:
+        return
+
+    # Rebuild in canonical order, keeping only scenarios the model actually provided.
+    report["price_target_matrix"] = [
+        by_scenario[s] for s in scenarios if s in by_scenario
+    ]
 
 
 # =========================
@@ -488,16 +557,23 @@ def main():
     )
 
     # ---------- LLM client ----------
-    backend = os.getenv("LLM_BACKEND", "gemini").lower()
-    if backend == "openai":
-        base_url = os.getenv("OPENAI_BASE_URL", "https://cbsai.business.columbia.edu/api/v1")
-        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-        client = OpenAI(base_url=base_url)
-        runner = OpenAIRunner(model=model, client=client)
+    cfg = load_llm_config()
+
+    if cfg.backend == "openai":
+        client = OpenAI(base_url=cfg.openai_base_url, api_key=cfg.openai_api_key)
+        runner = OpenAIRunner(model=cfg.openai_model, client=client)
+    elif cfg.backend == "gemini-vertex":
+        # Vertex AI in your GCP project (e.g. to consume education credits).
+        # Authentication is via ADC, configured outside this script:
+        #   gcloud auth application-default login
+        if not cfg.gcp_project:
+            raise ValueError("GOOGLE_CLOUD_PROJECT must be set when LLM_BACKEND=gemini-vertex")
+        client = genai.Client(vertexai=True, project=cfg.gcp_project, location=cfg.gcp_location)
+        runner = GeminiRunner(model=cfg.gemini_model, client=client)
     else:
-        model = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
+        # Default: Gemini API via API key (GEMINI_API_KEY)
         client = genai.Client()
-        runner = GeminiRunner(model=model, client=client)
+        runner = GeminiRunner(model=cfg.gemini_model, client=client)
 
     # ---------- 1A/1B/1C parallel ----------
     results: Dict[str, Any] = {}
@@ -523,10 +599,19 @@ def main():
     )
     final_report = runner.run_json(p2, temperature=0.2)
     normalize_rating(final_report)
+    normalize_price_target_matrix(final_report)
+
+    # Annotate report with the LLM backend/model used for full transparency
+    meta = final_report.get("report_metadata") or {}
+    meta["llm_backend"] = cfg.backend
+    if cfg.backend == "openai":
+        meta["llm_model"] = cfg.openai_model
+    else:
+        meta["llm_model"] = cfg.gemini_model
+    final_report["report_metadata"] = meta
 
     # ---------- Save ----------
-    out_dir = ensure_outputs_dir()
-    out_path = out_dir / f"{ticker}_{analysis_date}_report.json"
+    out_path = build_unique_output_path(ticker, analysis_date)
     out_path.write_text(json.dumps(final_report, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("\n=== FINAL REPORT (JSON) ===")

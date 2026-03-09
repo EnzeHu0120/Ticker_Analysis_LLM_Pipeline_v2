@@ -1,5 +1,5 @@
 """
-fundamental_pipeline.py — Fundamental data source (standalone module).
+fundamental_pipeline.py — Fundamental data source.
 
 Fetches from Yahoo Finance: annual/quarterly financials (income statement,
 balance sheet, cash flow), aligns to anchor_dates, computes derived metrics
