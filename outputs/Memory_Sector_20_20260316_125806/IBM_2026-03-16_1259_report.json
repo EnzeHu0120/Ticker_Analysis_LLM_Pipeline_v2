@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "IBM",
+    "company": "International Business Machines",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully executing a strategic pivot toward hybrid cloud and AI enterprise solutions.",
+      "evidence": "Led by CEO Arvind Krishna and CFO James Kavanaugh, steering the company through a mature large-cap compounder archetype."
+    },
+    "competitive_advantage": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Deep enterprise entrenchment and a strong moat built on full-stack integration of software, consulting, and infrastructure, amplified by key hyperscaler partnerships.",
+      "evidence": "Strategic partnerships with major hyperscalers (AWS, Microsoft, Oracle) and a comprehensive suite spanning hybrid cloud, AI platforms, and lifecycle services."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Accelerating top-line growth and robust bottom-line expansion driven by strong recent quarterly performance.",
+      "evidence": "YoY revenue growth accelerated to 7.6% (from 1.4%), with recent QoQ revenue up 20.5% and YoY net income growth surging 75.9%."
+    },
+    "balance_sheet_health": {
+      "score": -1,
+      "confidence": "medium",
+      "thesis": "Elevated leverage presents a structural financial headwind, though recent quarters show minor deleveraging efforts.",
+      "evidence": "High debt-to-equity ratio of 1.98 and YoY debt growth of 10.6%, partially offset by a recent QoQ debt reduction of 2.9%."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Highly diversified and synergistic segment mix capturing both high-margin digital transformation and stable legacy infrastructure.",
+      "evidence": "Operations span Software (hybrid cloud/AI), Consulting, Infrastructure, and Financing, providing end-to-end enterprise solutions."
+    },
+    "technical_setup": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Strong downtrend with poor momentum and weak liquidity, trading below major moving averages.",
+      "evidence": "Price (248.96) is below both the 50-day (275.46) and 200-day (276.55) SMAs. RSI is 43.1, and recent volume is notably low at 0.44x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Demonstrated margin expansion provides a near-term profitability trigger.",
+      "evidence": "Fundamental inferred catalyst highlights a meaningful improvement in net margin (+0.63 change)."
+    },
+    "negative_catalysts": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Ongoing technical breakdown risks further near-term selling pressure.",
+      "evidence": "Market-implied catalyst notes the price is in a weak downtrend below both 50-day and 200-day moving averages."
+    }
+  },
+  "aggregate_score": 12,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "WDC",
+    "company": "Western Digital Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Experienced executive team managing a mature large-cap compounder, though operating in a highly cyclical hardware sector.",
+      "evidence": "Led by CEO Tiang Yew Tan and an established C-suite; classified as a mature large-cap compounder."
+    },
+    "competitive_advantage": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Established incumbent with deep industry roots and global distribution in data storage, though the core HDD market faces structural commoditization and substitution risks.",
+      "evidence": "Founded in 1970, offering a broad portfolio of internal HDDs, data center platforms, and NAS solutions globally."
+    },
+    "growth_perspective": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Strong recent top-line acceleration and solid sequential growth, though historical net income volatility remains a factor.",
+      "evidence": "YoY revenue growth accelerated to 50.7% (from 0.99% previously), with sequential QoQ revenue up 7.06% and QoQ net income up 55.8%."
+    },
+    "balance_sheet_health": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Moderate leverage profile with active debt reduction, though underlying equity dynamics have caused leverage ratios to fluctuate.",
+      "evidence": "Debt-to-equity stands at 0.85, with a notable 36.6% YoY reduction in total debt and a slight 0.59% QoQ debt decrease."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Diversified mix across consumer and enterprise storage, with data center platforms providing higher-value exposure to offset legacy hardware.",
+      "evidence": "Product mix spans internal HDDs, data center drives/platforms, external/portable drives, and NAS for home/office."
+    },
+    "technical_setup": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Strong bullish trend structure with price well above major moving averages, though recent trading volume is light.",
+      "evidence": "Price (281.61) is in a strong uptrend above the 50-day (254.45) and 200-day (144.49) moving averages. 3-month return is 50.5%, but recent volume is only 0.48x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Top-line acceleration and strong market momentum could trigger further upside revisions.",
+      "evidence": "Inferred catalysts highlight a 50.7% YoY revenue growth acceleration and a strong multi-month positive return of 50.5%."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Profitability pressures and shifting capital structure metrics present near-term downside risks.",
+      "evidence": "Inferred catalysts point to material net margin compression and an increase in the debt-to-equity leverage ratio."
+    }
+  },
+  "aggregate_score": 16,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

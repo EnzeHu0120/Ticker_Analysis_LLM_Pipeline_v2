@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "DELL",
+    "company": "Dell Technologies Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Founder-led management provides strong strategic continuity and execution credibility in navigating enterprise hardware cycles.",
+      "evidence": "Michael Saul Dell remains Chairman & CEO, supported by tenured executives like Jeffrey W. Clarke (COO & Vice Chairman)."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Solid moat derived from a comprehensive, end-to-end enterprise IT portfolio and scale, though exposed to hardware commoditization.",
+      "evidence": "Broad offerings across Infrastructure Solutions Group (ISG) including AI-optimized servers and storage, and Client Solutions Group (CSG)."
+    },
+    "growth_perspective": {
+      "score": 1,
+      "confidence": "low",
+      "thesis": "Mixed near-term growth trajectory with recent top-line contraction offset by strong bottom-line expansion.",
+      "evidence": "Quarter-over-quarter revenue declined 9.3%, while quarter-over-quarter net income grew 33.0%. Forward P/E of 10.8x implies modest growth expectations."
+    },
+    "balance_sheet_health": {
+      "score": -1,
+      "confidence": "low",
+      "thesis": "Recent increases in debt levels present a minor headwind, with limited visibility into broader structural leverage metrics.",
+      "evidence": "Quarter-over-quarter debt increased by 8.9%. Annual debt-to-equity and free cash flow metrics are unavailable in the current packet."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Well-diversified segment mix balancing steady, lower-margin client devices with higher-value, sticky enterprise infrastructure and AI servers.",
+      "evidence": "Operations are split between ISG (modern storage, hyper-converged infrastructure, AI servers) and CSG (PCs, workstations, peripherals)."
+    },
+    "technical_setup": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Strong recent price momentum trading near 52-week highs, but overbought indicators and weak volume suggest near-term exhaustion risk.",
+      "evidence": "1-month return of 38.1% with price above 20, 50, and 200 SMAs. However, RSI is 70.2, Stochastic K is 96.2, and recent volume is only 0.47x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No specific near-term positive event-driven triggers identified.",
+      "evidence": "The catalyst summary contains no fundamental, technical, or industry-specific positive events."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No specific near-term negative event-driven triggers identified.",
+      "evidence": "The catalyst summary contains no fundamental, technical, or industry-specific negative events."
+    }
+  },
+  "aggregate_score": 12,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

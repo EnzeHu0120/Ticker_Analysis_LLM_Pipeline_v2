@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "SMCI",
+    "company": "Super Micro Computer, Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Experienced, founder-led management team with a long tenure, providing stability and deep industry expertise.",
+      "evidence": "Led by Founder, Chairman, and CEO Charles Liang, alongside co-founders Yih-Shyan Liaw and Chiu-Chu Liu Liang, who have guided the company since 1993."
+    },
+    "competitive_advantage": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Strong competitive moat in the AI hardware space driven by specialized cooling technologies and modular architectures.",
+      "evidence": "Provides liquid and air-cooled AI servers with integrated GPUs, and offers full rack and cluster level deployments for AI and HPC datacenters."
+    },
+    "growth_perspective": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Top-line growth remains robust but is decelerating, while bottom-line profitability is currently contracting.",
+      "evidence": "Revenue grew 46.5% YoY (decelerating from 110.4% previously) and surged 152.7% QoQ, but net income contracted 9.0% YoY."
+    },
+    "balance_sheet_health": {
+      "score": -2,
+      "confidence": "high",
+      "thesis": "Financial resilience is under pressure due to rapid debt accumulation, likely to fund working capital and expansion.",
+      "evidence": "Debt-to-equity stands at 0.758, with debt growing 118.8% YoY, significantly outpacing asset growth of 42.6%."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "High-quality, concentrated exposure to secular tailwinds in AI, cloud computing, and edge computing markets.",
+      "evidence": "Serves enterprise data centers, cloud computing, and AI markets with comprehensive solutions ranging from server boards to full rack-level services."
+    },
+    "technical_setup": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Bearish market structure characterized by a defined downtrend, weak momentum, and below-average liquidity.",
+      "evidence": "Stock is in a downtrend, trading at $31.38 (well below the 200-SMA of $41.05), with neutral RSI (49.1) and low volume (0.67x 20-day average)."
+    },
+    "positive_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No near-term positive event-driven catalysts identified in the current data packet.",
+      "evidence": "The catalyst summary contains no positive fundamental or technical triggers."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Near-term downside risks are elevated due to fundamental deterioration in margins, growth rates, and leverage.",
+      "evidence": "Inferred negative catalysts include revenue growth deceleration, material net margin compression, and a weakening balance sheet due to increased leverage."
+    }
+  },
+  "aggregate_score": 5,
+  "recommendation": "Hold",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

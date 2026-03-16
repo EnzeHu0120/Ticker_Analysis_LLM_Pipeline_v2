@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "IRM",
+    "company": "Iron Mountain Incorporated (Del",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully managing the transition from a legacy storage provider to a mature large-cap compounder.",
+      "evidence": "Led by CEO William Meaney, operating under a 'mature large-cap compounder' archetype with established market dominance."
+    },
+    "competitive_advantage": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Deeply entrenched market position with exceptionally high switching costs in physical storage, providing a strong moat.",
+      "evidence": "Trusted by 240,000 customers in 61 countries, including approximately 95% of the Fortune 1000."
+    },
+    "growth_perspective": {
+      "score": 2,
+      "confidence": "high",
+      "thesis": "Solid and consistent top-line expansion, though bottom-line contraction indicates near-term profitability headwinds.",
+      "evidence": "Revenue grew 12.2% YoY and 5.0% QoQ, but net income declined 19.7% YoY."
+    },
+    "balance_sheet_health": {
+      "score": -1,
+      "confidence": "medium",
+      "thesis": "Highly levered balance sheet typical of REIT structures, with rising debt levels requiring careful monitoring despite strong cash flows.",
+      "evidence": "Debt grew 16.3% YoY with a negative debt-to-equity ratio (-19.4), indicating negative book equity."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Favorable mix of highly cash-generative legacy physical storage funding expansion into higher-growth digital and data center segments.",
+      "evidence": "Operations span traditional information management, digital transformation, and data center asset lifecycle management."
+    },
+    "technical_setup": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Price remains in a strong structural uptrend, though short-term momentum is cooling on very light volume.",
+      "evidence": "Trading at $107.06, well above the 50-day ($98.96) and 200-day ($95.65) MAs. However, recent volume is only 0.27x the 20-day average and the MACD histogram is falling."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Incremental balance sheet improvements and sustained market momentum provide near-term support.",
+      "evidence": "Inferred data shows a recent decrease in leverage (debt-to-equity change of -0.40), alongside a market-implied strong uptrend."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Deteriorating margins present a tangible downside risk to earnings expectations over the next 3-12 months.",
+      "evidence": "Inferred fundamental data highlights material net margin compression (change of -0.28), signaling acute profitability pressure."
+    }
+  },
+  "aggregate_score": 13,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

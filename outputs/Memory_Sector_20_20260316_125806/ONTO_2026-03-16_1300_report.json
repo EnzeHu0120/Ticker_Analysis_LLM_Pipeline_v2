@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "ONTO",
+    "company": "Onto Innovation Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 2,
+      "confidence": "low",
+      "thesis": "Established leadership team executing a mature compounder strategy in a highly technical and cyclical industry.",
+      "evidence": "Led by CEO Michael Plisinski; company archetype identified as a mature large-cap compounder."
+    },
+    "competitive_advantage": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "Deep integration into semiconductor fabrication and advanced packaging yields high switching costs and a defensible technological moat.",
+      "evidence": "Provides specialized process control, yield management software, and automated metrology systems critical to global IC fabricators."
+    },
+    "growth_perspective": {
+      "score": -1,
+      "confidence": "high",
+      "thesis": "Structural growth is currently facing cyclical headwinds, with annual top-line growth slowing significantly and bottom-line contracting, despite a recent quarterly revenue bounce.",
+      "evidence": "Annual revenue growth decelerated to 1.8% (from 21.0% previously), and YoY net income fell 32.1%, though QoQ revenue increased 22.3%."
+    },
+    "balance_sheet_health": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Pristine balance sheet with virtually no leverage, offering maximum financial flexibility and resilience.",
+      "evidence": "Debt-to-equity ratio is exceptionally low at 0.008."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "Highly critical product suite with strong exposure to secular growth areas like advanced packaging, CMOS image sensors, and MEMS.",
+      "evidence": "Diverse end-market applications including semiconductor integrated circuit fabricators, LEDs, and advanced packaging device manufacturers."
+    },
+    "technical_setup": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "Primary uptrend remains intact above the 200-day MA, but short-term momentum is negative with price breaking below the 50-day MA on very light volume.",
+      "evidence": "Price (194.43) is below the 50-day MA (204.51) but above the 200-day MA (141.49); RSI is 45.4; recent volume is only 0.25x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No near-term positive event-driven catalysts identified in the current data packet.",
+      "evidence": "Catalyst summary contains no positive fundamental or technical triggers."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Near-term earnings risk driven by material margin compression and top-line deceleration.",
+      "evidence": "Inferred fundamental catalysts highlight a material net margin compression (-33.4% change) and revenue growth deceleration to 1.8%."
+    }
+  },
+  "aggregate_score": 12,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

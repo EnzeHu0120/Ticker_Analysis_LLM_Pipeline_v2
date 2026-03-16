@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "HPE",
+    "company": "Hewlett Packard Enterprise Comp",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "Experienced executive team leading a mature large-cap IT infrastructure company, but packet lacks specific execution metrics to evaluate recent performance.",
+      "evidence": "CEO Antonio Neri and CFO Marie Myers lead the company; archetype is mature large-cap compounder."
+    },
+    "competitive_advantage": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "HPE benefits from deep enterprise relationships and a broad portfolio across servers, networking, and hybrid cloud, though it operates in a highly competitive and commoditized hardware market.",
+      "evidence": "Offers comprehensive enterprise solutions including ProLiant servers, GreenLake hybrid cloud, and Aruba networking products."
+    },
+    "growth_perspective": {
+      "score": 0,
+      "confidence": "high",
+      "thesis": "Top-line growth is showing solid acceleration, but severe bottom-line contraction indicates significant profitability challenges or restructuring costs.",
+      "evidence": "Revenue growth accelerated to 13.8% YoY (from 3.4% previously), while net income plummeted 97.8% YoY with a razor-thin net margin of 0.16%."
+    },
+    "balance_sheet_health": {
+      "score": -2,
+      "confidence": "high",
+      "thesis": "Financial resilience is weakening due to increasing leverage and debt accumulation outpacing asset growth.",
+      "evidence": "Debt-to-equity stands at 0.97x, with debt growing 21.5% YoY compared to asset growth of only 6.5% YoY."
+    },
+    "business_segment_quality": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Diversified revenue streams across hardware, software, and services provide stability, with strategic focus on higher-margin hybrid cloud and networking.",
+      "evidence": "Operates in five distinct segments: Server, Hybrid Cloud, Networking, Financial Services, and Corporate Investments."
+    },
+    "technical_setup": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "The stock is in a strong downtrend with poor momentum and extremely low trading liquidity, indicating a lack of buyer conviction.",
+      "evidence": "Price (21.66) is below both the 50-day (21.94) and 200-day (21.95) moving averages. Recent volume is exceptionally low at 0.37x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "high",
+      "thesis": "Recent top-line acceleration could drive upside if profitability normalizes.",
+      "evidence": "Inferred fundamental catalyst: Revenue growth has recently accelerated on a year-over-year basis (13.8% vs 3.4% prior)."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Margin collapse and rising debt levels present near-term downside risks if operational efficiency does not improve.",
+      "evidence": "Inferred fundamental catalysts: Net margin has compressed materially (-98% change) and leverage has increased (D/E up 22% change)."
+    }
+  },
+  "aggregate_score": -3,
+  "recommendation": "Hold",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

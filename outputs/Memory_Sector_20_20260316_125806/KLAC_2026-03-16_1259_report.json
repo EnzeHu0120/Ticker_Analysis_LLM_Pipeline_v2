@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "KLAC",
+    "company": "KLA Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully managing a mature, large-cap compounder with strong profitability.",
+      "evidence": "Led by CEO Richard Wallace and CFO Bren Higgins, the company has achieved a $187B market cap and maintains high operating margins (41.2%)."
+    },
+    "competitive_advantage": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Dominant market position in mission-critical semiconductor process control and yield management with immense pricing power.",
+      "evidence": "Exceptional operating margin of 41.2% and net margin of 33.4% demonstrate a wide moat and high barriers to entry in advanced node metrology and inspection."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust structural growth driven by increasing semiconductor complexity and the critical need for yield improvement at advanced nodes.",
+      "evidence": "Year-over-year revenue growth of 23.9% and net income growth of 47.1%, reflecting strong structural demand for process control equipment."
+    },
+    "balance_sheet_health": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Solid financial resilience with active deleveraging, though gross leverage remains moderately elevated.",
+      "evidence": "Debt-to-equity stands at 1.30x, but the company is actively reducing debt (debt growth YoY is -10.7%) while growing assets (4.1% YoY)."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Highly focused and synergistic segment mix catering to essential semiconductor manufacturing processes.",
+      "evidence": "Operations are concentrated in Semiconductor Process Control, Specialty Semiconductor Process, and PCB/Component Inspection, directly aligning with secular semiconductor tailwinds."
+    },
+    "technical_setup": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Long-term uptrend intact, but currently experiencing short-term consolidation on low volume.",
+      "evidence": "Price (1428.12) is above the 200-SMA (1128.47) indicating a primary uptrend, but sits below the 20-SMA and 50-SMA with RSI at 47.8 and very low relative volume (0.41x 20d avg)."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Recent fundamental inflection points in revenue and margins set up positive earnings momentum for upcoming quarters.",
+      "evidence": "Revenue growth recently flipped from negative (-6.5%) to positive (23.9%), alongside meaningful net margin expansion and leverage reduction."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No immediate event-driven downside triggers identified in the current packet.",
+      "evidence": "The provided catalyst summary contains no negative events or downside triggers."
+    }
+  },
+  "aggregate_score": 24,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

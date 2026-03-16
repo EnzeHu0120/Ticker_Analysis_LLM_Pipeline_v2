@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "HOOD",
+    "company": "Robinhood Markets, Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Founder-led management team has successfully executed on expanding the product ecosystem beyond basic trading.",
+      "evidence": "Co-founders Vladimir Tenev (CEO) and Baiju Bhatt remain actively involved, driving expansion into credit cards, 24/7 trading, and retirement accounts."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Strong retail mindshare and a sticky, expanding ecosystem create a solid moat, though switching costs remain relatively low.",
+      "evidence": "Comprehensive platform offering fractional trading, crypto, cash sweep, margin, and credit cards, capturing a broad share of retail wallet."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust top and bottom-line growth supported by high operating leverage and expanding monetization of the user base.",
+      "evidence": "Last YoY revenue growth of 51.5%, net income growth of 33.4%, and a strong operating margin of 46.8%."
+    },
+    "balance_sheet_health": {
+      "score": -1,
+      "confidence": "medium",
+      "thesis": "Elevated leverage and recent debt growth present moderate financial risk, though recent quarterly debt reduction is a positive step.",
+      "evidence": "Debt-to-equity sits at 1.27 with YoY debt growth of 55.7%, partially offset by a 25.7% QoQ reduction in debt."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Revenue streams are increasingly diversified across transaction-based revenues and net interest/subscription products.",
+      "evidence": "Product mix spans equities, options, crypto, fully-paid securities lending, cash sweep, and credit cards."
+    },
+    "technical_setup": {
+      "score": -4,
+      "confidence": "high",
+      "thesis": "Severe technical breakdown with price trading well below all major moving averages amid a strong downtrend.",
+      "evidence": "Last close of 74.44 is significantly below the 50-day (91.43) and 200-day (107.70) moving averages, with a -39.6% 3-month return and low volume (0.49x average)."
+    },
+    "positive_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No near-term positive event-driven catalysts identified in the current data packet.",
+      "evidence": "The catalyst summary contains no positive inferred or company-specific events."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Margin compression and rising leverage act as near-term fundamental headwinds, exacerbated by negative market sentiment.",
+      "evidence": "Inferred catalysts highlight a material net margin compression (-11.9% change) and an increase in leverage (D/E change +0.35)."
+    }
+  },
+  "aggregate_score": 5,
+  "recommendation": "Hold",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

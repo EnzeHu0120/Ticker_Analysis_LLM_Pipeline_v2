@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "SNDK",
+    "company": "Sandisk Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "Leadership team is established, but there are insufficient specific execution signals to assign a directional score.",
+      "evidence": "Led by CEO David V. Goeckeler; categorized as a mature large cap compounder with medium confidence due to lack of specific signals."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Solid competitive moat driven by essential NAND flash technology and a broad, entrenched customer base across enterprise and consumer markets.",
+      "evidence": "Develops and manufactures NAND flash and SSDs for OEMs, datacenters, and cloud service providers globally."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Strong structural growth outlook supported by accelerating top-line and bottom-line metrics.",
+      "evidence": "Revenue growth of 10.4% YoY, accelerating to 31.1% QoQ. Net income grew 144.2% YoY and 616.9% QoQ."
+    },
+    "balance_sheet_health": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "Financial resilience is mixed; absolute leverage is low, but recent debt growth is high and profitability remains negative on a net basis.",
+      "evidence": "Debt-to-equity is low at 0.22, but debt grew 107.3% YoY. Net margin is currently negative at -22.3%."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "High-quality, diversified segment mix with strong exposure to secular growth themes.",
+      "evidence": "End markets include datacenters, private cloud, IoT, automotive, and mobile devices."
+    },
+    "technical_setup": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Very strong technical uptrend with significant momentum, though recent trading volume is slightly below average.",
+      "evidence": "Trading at 52-week highs (0.0% distance) with a 195.4% 3-month return. Price is above 20, 50, and 200 SMAs. Recent volume is 0.64x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Upside triggers are driven by fundamental margin improvements and strong market-implied momentum.",
+      "evidence": "Inferred meaningful net margin expansion and speculative momentum from a 195% 3-month return."
+    },
+    "negative_catalysts": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Downside risks are tied to balance sheet degradation from recent borrowing.",
+      "evidence": "Inferred increase in leverage (debt-to-equity) signaling a weakening balance sheet."
+    }
+  },
+  "aggregate_score": 17,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "dilution_risk",
+      "severity": "medium",
+      "summary": "Losses with weak cash generation may increase financing pressure."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

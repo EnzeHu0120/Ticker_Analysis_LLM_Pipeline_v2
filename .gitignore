@@ -1,5 +1,6 @@
 # Secrets (never commit)
 .env
+score_rows/
 
 # Python
 __pycache__/

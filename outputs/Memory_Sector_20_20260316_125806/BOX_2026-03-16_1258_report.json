@@ -1,0 +1,89 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "BOX",
+    "company": "Box, Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "Co-founder led executive team provides continuity, but lack of specific execution metrics limits conviction.",
+      "evidence": "Aaron Levie (Co-Founder, CEO) and Dylan Smith (Co-Founder, CFO) lead the company."
+    },
+    "competitive_advantage": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "Established SaaS platform for secure cloud content management and collaboration, though it faces intense competition from larger tech incumbents.",
+      "evidence": "Provides cloud content management, secure external collaboration, workspaces, e-signature processes, and content workflows."
+    },
+    "growth_perspective": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Top-line growth is sluggish and net income has contracted sharply, indicating profitability struggles despite slight revenue acceleration.",
+      "evidence": "Revenue growth YoY is 7.99% (up from 5.04% previously), but net income growth YoY is -52.8%."
+    },
+    "balance_sheet_health": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "High leverage indicates a stressed balance sheet, though recent debt reduction shows active deleveraging efforts.",
+      "evidence": "Debt-to-equity is high at 2.67, but debt growth YoY is -26.8% and QoQ debt change is -27.4%."
+    },
+    "business_segment_quality": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Pure-play SaaS model offers recurring revenue visibility, focused entirely on enterprise content management and workflow automation.",
+      "evidence": "Software-as-a-Service platform offering web, mobile, and desktop applications for content management."
+    },
+    "technical_setup": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Strong downtrend with price below key moving averages and extremely low recent volume suggesting a lack of buyer conviction.",
+      "evidence": "Price (24.69) is below MA50 (25.44) and MA200 (30.72). Trend regime is 'strong_downtrend'. Volume is 0.22x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Active deleveraging is improving balance sheet resilience.",
+      "evidence": "Leverage (debt-to-equity) has decreased by 26.7% recently."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Material net margin compression signals ongoing profitability pressure.",
+      "evidence": "Net margin has compressed materially with a -56.3% change."
+    }
+  },
+  "aggregate_score": -5,
+  "recommendation": "Hold",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "balance_sheet_risk",
+      "severity": "high",
+      "summary": "Leverage remains elevated versus equity base."
+    },
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

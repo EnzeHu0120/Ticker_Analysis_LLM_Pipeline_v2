@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "NVDA",
+    "company": "NVIDIA Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Founder-led management team with exceptional execution credibility in scaling complex technology platforms.",
+      "evidence": "Co-Founder Jen-Hsun Huang has led the company since 1993, successfully pivoting the business into a dominant data center AI infrastructure provider."
+    },
+    "competitive_advantage": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Unmatched structural moat in AI accelerated computing, driven by full-stack hardware and software integration.",
+      "evidence": "Dominant market position in data center AI solutions, supported by strategic partnerships with hyperscalers and ecosystem participants (e.g., Nebius Group, Lumentum)."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Hyper-growth profile with massive margin expansion, though top-line growth rates are naturally normalizing from peak levels.",
+      "evidence": "Most recent YoY revenue growth of 65.5% (down from 114.2% prior) and YoY net income growth of 64.7%, alongside a 60.4% operating margin."
+    },
+    "balance_sheet_health": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Pristine balance sheet with negligible leverage, providing immense financial resilience and capital flexibility.",
+      "evidence": "Debt-to-equity ratio sits at an extremely low 0.07, with a recent 44% reduction in leverage."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "Highly profitable segment mix heavily weighted toward secular AI tailwinds, though it introduces end-market concentration risk.",
+      "evidence": "Operations are bifurcated into Compute & Networking (data center/AI/auto) and Graphics, with the former driving the bulk of enterprise value."
+    },
+    "technical_setup": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "Long-term uptrend intact, but currently experiencing short-term consolidation and momentum cooling on low volume.",
+      "evidence": "Price (183.76) is above the 200-day MA (177.62) but below the 20-day and 50-day MAs. RSI is neutral at 49.3, and recent volume is only 0.38x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Continued balance sheet optimization provides dry powder for strategic investments or shareholder returns.",
+      "evidence": "Inferred fundamental catalyst highlights a recent decrease in leverage (debt-to-equity), improving overall financial resilience."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Decelerating growth rates pose a near-term valuation risk if market expectations remain priced for peak acceleration.",
+      "evidence": "Inferred fundamental catalyst notes YoY revenue growth has decelerated from 114.2% to 65.5%."
+    }
+  },
+  "aggregate_score": 23,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

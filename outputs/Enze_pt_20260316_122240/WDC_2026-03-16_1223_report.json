@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "WDC",
+    "company": "Western Digital Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "Leadership is executing within a mature large-cap framework, but there is insufficient specific evidence to evaluate execution quality beyond standard operations.",
+      "evidence": "Management team led by CEO Tiang Yew Tan; company classified as a mature large-cap compounder."
+    },
+    "competitive_advantage": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Western Digital benefits from significant scale and a broad portfolio spanning consumer and enterprise storage, though hardware remains somewhat commoditized.",
+      "evidence": "$95B market cap; comprehensive product suite including HDDs, data center platforms, and NAS."
+    },
+    "growth_perspective": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Top-line growth has accelerated significantly, supported by sequential improvements, despite historical net income contraction.",
+      "evidence": "YoY revenue growth accelerated to 50.7% (from 0.9%); QoQ revenue grew 7.06% and QoQ net income rebounded 55.8%."
+    },
+    "balance_sheet_health": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "The balance sheet carries moderate leverage, but the company has been actively reducing its absolute debt load year-over-year.",
+      "evidence": "Debt-to-equity stands at 0.85; YoY debt growth is -36.6%, with a slight QoQ debt reduction of -0.59%."
+    },
+    "business_segment_quality": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "The segment mix is well-diversified across end-markets, with data center exposure providing secular tailwinds against mature consumer storage.",
+      "evidence": "Sales channels span OEMs, dealers, and retailers, covering internal/external drives and data center platforms."
+    },
+    "technical_setup": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "The stock is in a strong uptrend with solid momentum across multiple timeframes, though recent trading volume is light.",
+      "evidence": "Price (279.30) is well above 50-day (254.41) and 200-day (144.48) SMAs; 3-month return is +49.2%; recent volume is 0.45x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Accelerating revenue growth and strong technical momentum provide near-term upside triggers.",
+      "evidence": "Inferred catalysts highlight YoY revenue growth acceleration (to 50.7%) and strong multi-month positive returns (+49.2% over 3 months)."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Profitability pressures and relative leverage increases pose near-term downside risks.",
+      "evidence": "Inferred catalysts point to material net margin compression and an increase in the debt-to-equity ratio."
+    }
+  },
+  "aggregate_score": 12,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "STX",
+    "company": "Seagate Technology Holdings PLC",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully navigating the company through a cyclical rebound and transitioning towards mass capacity solutions.",
+      "evidence": "Led by CEO Dr. William David Mosley and CTO Dr. John C. Morris; classified as a mature large-cap compounder."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Strong oligopolistic position in the HDD market, particularly in enterprise nearline and mass capacity storage, though facing long-term SSD substitution in legacy segments.",
+      "evidence": "Product portfolio heavily weighted toward enterprise nearline HDDs/SSDs and the Lyve edge-to-cloud mass capacity platform."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Significant fundamental acceleration, rebounding sharply from previous contractions with robust top and bottom-line expansion.",
+      "evidence": "YoY revenue growth accelerated to 38.8% (from -11.2% previously), alongside 338.5% YoY net income growth and 7.4% QoQ revenue growth."
+    },
+    "balance_sheet_health": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Highly leveraged capital structure with negative equity, though mitigated somewhat by active debt reduction and strong operating margins.",
+      "evidence": "Debt-to-equity ratio of -11.02 indicates negative equity; however, YoY debt growth is -11.9% and QoQ debt change is -3.8%, supported by a 21% operating margin."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Favorable mix shift towards high-margin enterprise and cloud infrastructure, offsetting secular declines in legacy consumer/PC storage.",
+      "evidence": "Focus on mass capacity storage products, enterprise nearline systems, and edge-to-cloud platforms (Lyve) serving OEMs and cloud providers."
+    },
+    "technical_setup": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Strong technical uptrend with price trading above all major moving averages, though recent trading volume is relatively light.",
+      "evidence": "Classified as 'strong_uptrend' with a 30% 3-month return. Price ($399.24) is above 20, 50, and 200 SMAs. RSI is neutral at 53.8, but recent volume is only 0.52x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Continued momentum from revenue acceleration and meaningful margin expansion.",
+      "evidence": "Inferred catalysts highlight a 38.8% YoY revenue growth acceleration and a 215 bps improvement in net margins."
+    },
+    "negative_catalysts": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Deteriorating leverage metrics could trigger downside if cyclical demand falters.",
+      "evidence": "Inferred downside catalyst notes that leverage (debt-to-equity) has increased, weakening the balance sheet profile."
+    }
+  },
+  "aggregate_score": 17,
+  "recommendation": "Equal-weight",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

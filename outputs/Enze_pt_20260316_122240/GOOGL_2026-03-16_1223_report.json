@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "GOOGL",
+    "company": "Alphabet Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Experienced and highly credible executive team with a strong track record of operational execution and capital allocation.",
+      "evidence": "Led by CEO Sundar Pichai and President/CIO Ruth Porat, with continued board presence from Co-Founder Larry Page."
+    },
+    "competitive_advantage": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Unmatched, highly defensible moat driven by global dominance in search, video, and mobile operating systems, augmented by a top-tier cloud and AI infrastructure.",
+      "evidence": "Ecosystem encompasses Google Search, YouTube, Android, and Google Cloud (Vertex AI, Gemini), creating massive network effects and data advantages."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust and accelerating top-line growth paired with exceptional bottom-line expansion, indicative of strong operating leverage.",
+      "evidence": "Revenue growth accelerated to 15.1% YoY (from 13.9% previously), with net income growing 32.0% YoY and QoQ revenue up 11.2%."
+    },
+    "balance_sheet_health": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Financial resilience remains exceptionally strong with minimal leverage, despite a recent proportional increase in debt.",
+      "evidence": "Debt-to-equity ratio is very low at 0.14, providing massive balance sheet flexibility even with recent YoY debt growth."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "High-quality mix dominated by highly profitable digital advertising and subscription services, complemented by a rapidly scaling enterprise cloud segment.",
+      "evidence": "Operations span Google Services (Ads, YouTube, Subscriptions) and Google Cloud (AI, Workspace), balancing cash-cow segments with high-growth enterprise tech."
+    },
+    "technical_setup": {
+      "score": 1,
+      "confidence": "medium",
+      "thesis": "Long-term uptrend intact, but short-term momentum is weak with price trading below near-term moving averages on exceptionally low volume.",
+      "evidence": "Price (303.32) is above the 200-MA (256.78) but below the 20-MA and 50-MA. RSI is neutral-to-weak at 42.7, and recent volume is only 0.28x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Meaningful margin expansion provides a strong fundamental tailwind for near-term earnings beats.",
+      "evidence": "Net margin has improved significantly, indicating strong cost control and operating leverage."
+    },
+    "negative_catalysts": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Recent increases in leverage present a minor fundamental headwind, though absolute risk remains low.",
+      "evidence": "Leverage (debt-to-equity) has increased, triggering a negative fundamental inferred catalyst."
+    }
+  },
+  "aggregate_score": 23,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

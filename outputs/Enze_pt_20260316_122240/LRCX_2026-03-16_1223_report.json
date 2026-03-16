@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "LRCX",
+    "company": "Lam Research Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully navigating industry cycles, evidenced by a return to strong top-line growth and significant margin expansion.",
+      "evidence": "Net income growth of 39.9% YoY and operating margins of 32.0% under CEO Timothy Archer."
+    },
+    "competitive_advantage": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Deep competitive moat driven by high barriers to entry and critical technological integration in semiconductor fabrication processes.",
+      "evidence": "Comprehensive product suite across deposition (ALTUS, Striker), etch (Flex, Kiyo), and clean applications, serving a consolidated global fab customer base."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust structural growth recovery following a cyclical downturn, with accelerating top and bottom-line metrics.",
+      "evidence": "Revenue growth accelerated to 23.6% YoY (up from -14.4% previously), alongside 39.9% YoY net income growth."
+    },
+    "balance_sheet_health": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Conservative capital structure with manageable leverage and active debt reduction, providing strong financial resilience.",
+      "evidence": "Debt-to-equity ratio stands at a healthy 0.45x, with total debt decreasing by 10.0% YoY."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "High-quality revenue mix blending capital-intensive equipment sales with recurring service and upgrade streams.",
+      "evidence": "Operations span multiple critical fab steps (etch, deposition, clean) and include a dedicated customer service, spares, and upgrades segment."
+    },
+    "technical_setup": {
+      "score": 2,
+      "confidence": "high",
+      "thesis": "Long-term uptrend intact, but currently undergoing a short-term pullback and consolidation on light volume.",
+      "evidence": "Price (216.03) is below 50-day MA (223.37) but well above 200-day MA (149.07). RSI is neutral at 46.8, and recent volume is notably low at 0.36x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Recent fundamental momentum, including margin expansion and revenue acceleration, serves as a near-term upside trigger for valuation multiples.",
+      "evidence": "Inferred catalysts highlight meaningful net margin improvement and accelerating YoY revenue growth."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No immediate event-driven downside triggers identified in the current data packet.",
+      "evidence": "The catalyst summary contains no negative fundamental or technical events."
+    }
+  },
+  "aggregate_score": 26,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "stretched",
+    "confidence": "medium",
+    "summary": "Earnings/cash-flow multiples imply rich valuation."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

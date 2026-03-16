@@ -1,133 +1,194 @@
-# Ticker Analysis LLM Pipeline
+# TickerAnalysis LLM Pipeline (v2)
 
-A pipeline that pulls fundamental and price data for a given ticker, engineers features, and uses an LLM (Gemini) to produce a structured **fundamental + technical synthesis report** in JSON.
+Two-stage research workflow optimized for performance, cost control, and readability:
 
-**End goal:** A fully automated workflow to analyze and record a ticker’s fundamentals and technicals, with reports that can be versioned and compared over time. The design is intended to evolve with LLM capabilities (better models, prompts, and tool use) so the pipeline stays current.
+1. **Universe Scan / Ranking (default)**  
+   Batch lean scorecard generation for many tickers.
+2. **Deep Dive / Full Report (on demand)**  
+   Extra synthesis only for selected names.
 
-Example reports are written to the `outputs/` directory. In this repo, a reference example is:
-- `outputs/POET_2026-03-12_1820_report.json`
-
----
-
-## In progress (roadmap)
-
-- **Industry / ecosystem catalysts (`industry_candidates`)**  
-  - Currently always empty. Planned: populate via sector/industry news or peer-event feeds (e.g. FMP/Finnhub sector APIs) so Prompt 1D and the final report can include industry-level catalyst evidence.
-- **Signal aggregation framework**  
-  - Structured `signals` JSON from the LLM (growth / profitability / valuation / balance_sheet / momentum / catalysts / risk / management_execution).  
-  - Python-side signal scoring with a simple scale (e.g. strong_positive = +2, positive = +1, cautious = -1, strong_negative = -2).  
-- **Signal aggregation ranking**  
-  - Compute a per-ticker overall score from signals and catalyst quality.  
-  - Support ranking across 100+ tickers and exporting top-ideas / high-risk-high-upside lists.  
-- **Backtest**  
-  - Design a backtest framework to evaluate whether higher-scored names outperform (hit rate, forward returns, rank IC, drawdown, Sharpe).  
-- **UI / visualization**  
-  - JSON report visualization (single-ticker detail, multi-ticker comparison, ranking dashboards).  
-- **Cost control**  
-  - Continue to refine prompt structure (including rating and catalyst logic in `llm_pipeline.py`), model choice, and batching so that large universes (100+ tickers) remain affordable under typical LLM credit limits.
+Example reports are written to `outputs/`.  
+Example ranking rows are written to `score_rows/`.
 
 ---
 
-## What it does
+## Product workflow
 
-1. **Data** — Fetches from Yahoo Finance:
-   - Annual financials: income statement, balance sheet, cash flow (last 5 fiscal years)
-   - Quarterly financials (last 5 quarters)
-   - Price history for technicals
+### Stage 1 (default): Universe Scan
+- Input: ticker list or CSV ticker column
+- Output per ticker: lean structured report
+- Output batch: sortable ranking table (`score_rows_*.csv/.json`)
+- LLM cost model: **one main LLM call per ticker**
 
-2. **Features** — Computes:
-   - Fundamental metrics: margins, leverage, growth rates, etc.
-   - Technical snapshot (via [ta](https://github.com/bukosabino/ta)): see **Technical indicators** below. A high-info-density **technical summary** is then produced for the LLM (not the full indicator table).
+### Stage 2 (optional): Full Report
+- Triggered only when explicitly requested for selected tickers
+- Adds:
+  - `overall_outlook`
+  - `price_target_matrix` (`bear` / `base` / `bull`)
+- LLM cost model: **one extra cheaper synthesis call per selected ticker**
 
-3. **LLM analysis** — Sends the above to the LLM in four parallel prompts, then one synthesis:
-   - **1A** — Annual fundamental signals (top 5)
-   - **1B** — Quarterly deviation / acceleration / reversal signals
-   - **1C** — Technical signals from the computed snapshot
-   - **1D** — Catalyst classification from upstream evidence (company news, inferred fundamental/technical catalysts; industry/ecosystem candidates are planned, see **In progress**)
-   - **2** — Synthesis: archetype-aware outlook, combined signals, price target matrix (Bear / Consensus / Bull), structured catalysts (direction: positive / negative / neutral), rating, risks
+---
 
-4. **Output** — Writes a single JSON report to `outputs/{TICKER}_{date}_report.json`, including a **hard rating** (Overweight | Equal-weight | Hold | Underweight | Reduce) with rationale.
+## v2 default output schema (lean)
 
-   **Rating (post-processing):** The report’s `rating` is not the LLM’s raw output. The pipeline saves the model’s original rating as `rating_raw_model`, then sets `rating` from the structured **rating_dimensions** (expected return, thesis conviction, balance-sheet risk, catalyst quality, valuation) via a fixed mapping. That keeps the final rating aligned with the dimensions and comparable across runs.
+Top-level fields:
+- `report_version`
+- `report_metadata`
+- `scorecard` (exactly 8 dimensions)
+- `aggregate_score`
+- `recommendation`
+- `valuation_flag`
+- `risk_flags`
+- `validation`
+
+Excluded in lean mode:
+- `aggregate_score_pct`
+- `sector_rank`
+- `deep_dive_priority`
+- `catalyst_inputs_debug`
+
+---
+
+## Scorecard design
+
+Exact 8 dimensions:
+- `leadership`
+- `competitive_advantage`
+- `growth_perspective`
+- `balance_sheet_health`
+- `business_segment_quality`
+- `technical_setup`
+- `positive_catalysts`
+- `negative_catalysts`
+
+Each dimension has:
+- `score` (integer, bounded by dimension)
+- `confidence` (`low|medium|high`)
+- `thesis`
+- `evidence`
+
+Score ranges:
+- First 6 dimensions: `-5..5`
+- `positive_catalysts`: `0..5`
+- `negative_catalysts`: `-5..0`
+
+---
+
+## Aggregate and recommendation
+
+v2.0 aggregate:
+- `aggregate_score = sum(8 dimension scores)` (equal-weight now; weighting-ready implementation)
+
+Recommendation mapping:
+- `>= 18`: `Overweight`
+- `8..17`: `Equal-weight`
+- `-7..7`: `Hold`
+- `-17..-8`: `Underweight`
+- `<= -18`: `Reduce`
+
+---
+
+## News handling (cost + quality)
+
+- Default: `ENABLE_NEWS=false`
+- If enabled, news is strictly filtered:
+  - lookback constrained to `7..14` days
+  - deduplicated
+  - noisy titles removed
+  - max `5` items
+- News is optional catalyst evidence only; it does not directly drive structural thesis.
 
 ---
 
 ## Setup
 
-- **Python:** 3.10+ (tested on 3.13).
+- Python 3.10+
+- Install dependencies:
 
-- **Install dependencies:** (includes [ta](https://github.com/bukosabino/ta) for technical indicators)
-  ```bash
-  pip install -r requirements.txt
-  ```
+```bash
+pip install -r requirements.txt
+```
 
-- **Secrets / LLM config (never commit `.env`):**  
-  Copy `.env.example` to `.env` and choose your LLM backend:
-  ```bash
-  cp .env.example .env
-  # Edit .env and set:
-  #   LLM_BACKEND=gemini        # or: gemini-vertex, openai
-  #   GEMINI_MODEL=...          # e.g. gemini-3.1-pro-preview
-  #   GEMINI_API_KEY=...        # if using Gemini API
-  #   GOOGLE_CLOUD_PROJECT=...  # if using Vertex AI
-  #   OPENAI_API_KEY=...        # if using OpenAI gateway
-  ```
-  `.env` is in `.gitignore`; only `.env.example` (no real keys) is in the repo.
+- Configure `.env` (never commit secrets):
+
+```bash
+cp .env.example .env
+```
+
+Key env options:
+- `LLM_BACKEND=gemini | gemini-vertex | openai`
+- `GEMINI_MODEL=...`
+- `ENABLE_NEWS=false` (default recommended)
+- `REPORT_MODE=lean` (default)
 
 ---
 
 ## Run
 
+### Single ticker (lean default)
+
 ```bash
 python llm_pipeline.py AAPL
 ```
-Or run without arguments to be prompted for a ticker.
 
-Reports are saved under `outputs/` (also gitignored so local runs don’t pollute the repo).
+### Single ticker full mode
 
----
+```bash
+python llm_pipeline.py AAPL --report-mode full
+```
 
-## Technical indicators (technical analysis)
+### Universe scan / ranking
 
-The pipeline computes the following indicators from OHLCV price history via the [ta](https://github.com/bukosabino/ta) library. Only a compact **summary** of these (plus key levels) is sent to the LLM.
+```bash
+python universe_runner.py --tickers AAPL,MSFT,NVDA
+```
 
-| Category   | Indicator        | Symbol / name   | Parameters / notes                    |
-|-----------|-------------------|-----------------|----------------------------------------|
-| **Trend** | Simple moving avg | `sma_20`, `sma_50`, `sma_200` | 20-, 50-, 200-day SMA of close        |
-|           | Exponential MA   | `ema_20`        | 20-day EMA of close                    |
-|           | MACD             | `macd`, `macd_signal`, `macd_diff` | 12/26/9; diff = histogram             |
-| **Momentum** | RSI            | `rsi_14`        | 14-period RSI                          |
-|           | Stochastic       | `stoch_k`, `stoch_d` | 14-period, 3-period smooth            |
-|           | Williams %R      | `williams_r`    | 14-period (lbp=14)                     |
-| **Volatility** | ATR           | `atr_14`        | 14-period Average True Range           |
-|           | Bollinger Bands   | `bb_mid`, `bb_high`, `bb_low`, `bb_width`, `bb_pos` | 20-period, 2 std dev; width and % position |
-| **Volume** | On-Balance Volume | `obv`          | Cumulative volume by close direction   |
-|           | Chaikin Money Flow | `cmf`        | 20-period CMF                          |
-|           | Money Flow Index  | `mfi_14`      | 14-period MFI                          |
-|           | VWAP (rolling)   | `vwap_14`     | 14-period volume-weighted average price |
-| **Other** | Support / resistance | —           | Min/max close over 60-day and full lookback |
-|           | Returns           | `return_1m`, `return_3m` | 21- and 63-day price return          |
+or
+
+```bash
+python universe_runner.py --csv your_universe.csv --ticker-col ticker
+```
 
 ---
 
-## Repo layout
+## Lightweight UI
+
+```bash
+streamlit run streamlit_app.py
+```
+
+UI flow:
+1. Universe Scan
+2. Ranking Table
+3. Ticker Detail Snapshot
+4. Explicit `Generate Full Report` action
+
+---
+
+## Repo layout (v2)
 
 | Path | Purpose |
 |------|--------|
-| **`fundamental_pipeline.py`** | **Fundamental data source** — Yahoo Finance annual/quarterly fetch, anchor-based history, investment-oriented metrics (growth, margins, leverage, FCF proxies, capex/R&D intensity) |
-| **`technical_pipeline.py`** | **Technical data source** — ta-based indicator computation, technical summary for LLM, plus 52w context and trend/volatility regimes |
-| **`catalyst_pipeline.py`** | **Catalyst layer** — Aggregates external news (FMP/Finnhub) + inferred fundamental/technical catalysts into structured inputs for the LLM. `industry_candidates` is currently a placeholder (empty); planned to be filled via sector/industry or peer feeds. |
-| **`archetype.py`** | **Archetype layer** — Classifies the company into coarse archetypes (e.g. pre-profit deep tech, cyclical industrial, regulated utility) to guide the research lens |
-| **`llm_pipeline.py`** | **LLM layer** — Pulls fundamental + technical + archetype + catalyst data, runs prompts 1A/1B/1C/1D + final synthesis, writes JSON report with rating and structured signals/catalysts |
-| **`report_validation.py`** | **Schema validation** — Validates final report rating, price_target_matrix, signals, and structured_catalysts, surfacing issues for auditing |
-| **`llm_config.py`** | Central LLM configuration (backend/model/project); loaded by `llm_pipeline.py` |
-| `.env.example` | Template for local `.env` (copy to `.env`, add `GEMINI_API_KEY`) |
-| `requirements.txt` | Python dependencies |
-| `outputs/` | Generated reports (gitignored) |
+| `fundamental_pipeline.py` | Reused fundamental fetch + engineered metrics |
+| `technical_pipeline.py` | Reused technical indicators + regime snapshot |
+| `archetype.py` | Reused archetype classification |
+| `catalyst_pipeline.py` | Catalyst/event inputs; news optional and filtered |
+| `llm_config.py` | Central backend/model config |
+| `report_schema.py` | v2 schema constants, score bounds, aggregation helpers |
+| `prompt_templates.py` | v2 prompt templates (lean scorecard + full extension) |
+| `llm_clients.py` | LLM JSON runners (Gemini/OpenAI) |
+| `report_validation.py` | v2 lean/full schema validation |
+| `llm_pipeline.py` | v2 single-ticker orchestration entry point |
+| `universe_runner.py` | Batch scan/ranking runner + score_rows persistence |
+| `streamlit_app.py` | Lightweight ranking/deep-dive UI |
+| `outputs/` | Per-ticker reports |
+| `score_rows/` | Persistent ranking rows |
 
 ---
 
-## Keeping it current
+## Migration notes
 
-- The pipeline is built to **stay updated as LLMs improve**: swap models via `GEMINI_MODEL` (or code), refine prompts, and later add tool use / agents if useful.
-- Extend with more data sources, metrics, or prompt stages as needed; the goal is a single, repeatable flow from ticker → stored analysis, with auditable inputs (fundamentals, technicals, catalysts, archetype) behind each final rating.
+- Replaced multi-step 1A/1B/1C/1D+2 default path with compact v2 packet + one main scorecard call.
+- Default workflow is now scan/ranking first; full report is opt-in.
+- Validation now enforces v2 scorecard bounds, aggregate/recommendation consistency, valuation/risk schemas, and mode-specific checks.
+- `fundamental_pipeline.py`, `technical_pipeline.py`, `archetype.py`, and `llm_config.py` are preserved and reused.

@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "TSM",
+    "company": "Taiwan Semiconductor Manufactur",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Highly effective executive team driving exceptional profitability and scale in a capital-intensive industry.",
+      "evidence": "Led by Chairman & CEO Dr. C. C. Wei, the company maintains a $1.76T market cap with a 50.8% operating margin and 46.4% YoY net income growth."
+    },
+    "competitive_advantage": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Dominant foundry moat with unparalleled scale, process technology leadership, and pricing power.",
+      "evidence": "Demonstrated by massive scale ($1.76T market cap) and elite profitability metrics, including a 45.1% net margin and 50.8% operating margin in semiconductor manufacturing."
+    },
+    "growth_perspective": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Robust structural growth driven by advanced node demand across multiple secular tailwinds.",
+      "evidence": "Revenue grew 31.6% YoY (following 33.8% previous YoY growth), with net income expanding 46.4% YoY and sequential QoQ revenue up 5.6%."
+    },
+    "balance_sheet_health": {
+      "score": 5,
+      "confidence": "high",
+      "thesis": "Exceptional financial resilience characterized by low leverage and strong asset expansion.",
+      "evidence": "Debt-to-equity sits at a low 0.196. Asset growth (18.5% YoY) significantly outpaced debt growth (1.6% YoY)."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "High-quality, diversified end-market exposure anchored by secular growth sectors.",
+      "evidence": "Fabrication processes serve critical, high-growth markets including high-performance computing (HPC), smartphones, IoT, and automotive."
+    },
+    "technical_setup": {
+      "score": 2,
+      "confidence": "high",
+      "thesis": "Long-term uptrend intact, but facing short-term consolidation with weak momentum and low trading liquidity.",
+      "evidence": "Price (341.03) is below the 50-DMA (346.04) but above the 200-DMA (281.07). RSI is neutral-to-weak at 44.3, MACD histogram is falling, and recent volume is only 0.49x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Recent margin expansion and deleveraging provide near-term fundamental momentum.",
+      "evidence": "Inferred catalysts show a recent net margin improvement (+11.2% change) and a decrease in leverage (D/E change -19.5%)."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No immediate event-driven downside triggers identified.",
+      "evidence": "The upstream packet contains no negative fundamental, technical, or news-driven catalysts."
+    }
+  },
+  "aggregate_score": 29,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

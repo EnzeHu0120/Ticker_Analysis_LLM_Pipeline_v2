@@ -16,6 +16,8 @@ This module does NOT ask the LLM to hallucinate catalysts. It only:
 
 from dataclasses import dataclass, asdict
 import datetime as dt
+import os
+import re
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -33,8 +35,21 @@ class CatalystCandidate:
     category: str  # "company" | "industry" | "speculative"
     description: str
     source_type: str  # "reported" | "inferred" | "market_implied" | "speculative"
-    direction: str  # "positive" | "negative" | "mixed"
+    direction: str  # "positive" | "negative" | "neutral"
     evidence: Dict[str, Any]
+
+
+NOISY_TITLE_PATTERNS = [
+    r"premarket movers?",
+    r"top stocks? to watch",
+    r"market recap",
+    r"whale",
+    r"options flow",
+    r"list of ",
+    r"best stocks?",
+    r"hot stocks?",
+    r"broad market",
+]
 
 
 def _safe_pct_change(series: pd.Series) -> pd.Series:
@@ -245,7 +260,7 @@ def infer_technical_catalysts(tech_snapshot: Dict[str, Any]) -> List[CatalystCan
                 CatalystCandidate(
                     category="company",
                     source_type="market_implied",
-                    direction="mixed",
+                    direction="neutral",
                     description="Unusual volume spike relative to recent history, indicating elevated attention.",
                     evidence={"volume_last": vol_last_f, "avg_volume_20": avg_vol_20_f},
                 )
@@ -291,6 +306,77 @@ def fetch_external_news_candidates(
     return news_items_to_dicts(all_items)
 
 
+def _news_enabled() -> bool:
+    return str(os.getenv("ENABLE_NEWS", "false")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _is_likely_noise(title: str) -> bool:
+    t = (title or "").strip().lower()
+    if not t:
+        return True
+    for pat in NOISY_TITLE_PATTERNS:
+        if re.search(pat, t):
+            return True
+    return False
+
+
+def _news_relevance_score(item: Dict[str, Any], ticker: str) -> int:
+    t = ticker.upper()
+    text = " ".join(
+        [
+            str(item.get("title") or ""),
+            str(item.get("summary") or ""),
+            str(item.get("source") or ""),
+        ]
+    ).lower()
+    score = 0
+    if t.lower() in text:
+        score += 2
+    if str(item.get("source_type") or "").lower() == "finnhub":
+        score += 1
+    if len(str(item.get("title") or "")) >= 20:
+        score += 1
+    return score
+
+
+def filter_news_candidates(
+    items: List[Dict[str, Any]],
+    ticker: str,
+    max_items: int = 5,
+) -> List[Dict[str, Any]]:
+    """
+    Keep only high-relevance, low-noise news items.
+    This makes news optional catalyst evidence instead of direct thesis input.
+    """
+    dedup: Dict[str, Dict[str, Any]] = {}
+    for item in items:
+        title = str(item.get("title") or "").strip()
+        if _is_likely_noise(title):
+            continue
+        key = re.sub(r"\s+", " ", title.lower())
+        if not key:
+            continue
+        cur = dedup.get(key)
+        if cur is None:
+            dedup[key] = item
+            continue
+        # Keep newer when duplicate titles exist.
+        cur_dt = str(cur.get("datetime") or "")
+        new_dt = str(item.get("datetime") or "")
+        if new_dt > cur_dt:
+            dedup[key] = item
+
+    ranked = sorted(
+        dedup.values(),
+        key=lambda x: (
+            _news_relevance_score(x, ticker),
+            str(x.get("datetime") or ""),
+        ),
+        reverse=True,
+    )
+    return ranked[:max_items]
+
+
 def build_catalyst_inputs(
     ticker: str,
     analysis_date: str,
@@ -307,11 +393,31 @@ def build_catalyst_inputs(
 
     inferred_fund_cats = [asdict(c) for c in infer_fundamental_catalysts(metrics_df)]
     inferred_tech_cats = [asdict(c) for c in infer_technical_catalysts(tech_snapshot)]
-    news_items = fetch_external_news_candidates(ticker, analysis_date)
+
+    news_items: List[Dict[str, Any]] = []
+    news_enabled = _news_enabled()
+    if news_enabled:
+        try:
+            lookback_days = int(os.getenv("NEWS_LOOKBACK_DAYS", "10"))
+        except ValueError:
+            lookback_days = 10
+        lookback_days = max(7, min(14, lookback_days))
+        try:
+            limit_per_source = int(os.getenv("NEWS_LIMIT_PER_SOURCE", "8"))
+        except ValueError:
+            limit_per_source = 8
+        raw_news = fetch_external_news_candidates(
+            ticker,
+            analysis_date,
+            lookback_days=lookback_days,
+            limit_per_source=max(5, min(20, limit_per_source)),
+        )
+        news_items = filter_news_candidates(raw_news, ticker=ticker, max_items=5)
 
     return {
         "ticker": ticker,
         "analysis_date": analysis_date,
+        "news_enabled": news_enabled,
         "company_news": news_items,
         "fundamental_inferred": inferred_fund_cats,
         "technical_inferred": inferred_tech_cats,

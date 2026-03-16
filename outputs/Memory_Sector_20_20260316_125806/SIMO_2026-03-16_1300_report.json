@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "SIMO",
+    "company": "Silicon Motion Technology Corpo",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Founder-led management team provides long-term strategic continuity and deep industry expertise.",
+      "evidence": "Chia-Chang Kou has served as Founder, President, and CEO since 1995."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Entrenched position in the NAND flash controller market with broad exposure across consumer, enterprise, and industrial applications.",
+      "evidence": "Supplies controllers directly to NAND flash makers, hyperscalers, and OEMs under the established SMI and Ferri brands."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "Robust recent top and bottom-line expansion indicates strong demand recovery or market share gains.",
+      "evidence": "QoQ revenue grew 21.8% and QoQ net income surged 139.8%, following a previous YoY revenue growth of 25.7%."
+    },
+    "balance_sheet_health": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "Insufficient data to evaluate current funding and financial resilience.",
+      "evidence": "Debt-to-equity, free cash flow, and debt growth metrics are unavailable in the provided packet."
+    },
+    "business_segment_quality": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Well-diversified end-market exposure mitigates cyclicality in any single hardware segment.",
+      "evidence": "Product portfolio spans computing SSDs, enterprise/hyperscale data centers, mobile eMMC/UFS, and specialized industrial/automotive SSDs."
+    },
+    "technical_setup": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "Strong long-term uptrend with recent consolidation on lower volume.",
+      "evidence": "Price is above 50-day and 200-day MAs with a +37.2% 3-month return, though the 1-month return is -7.8% and recent volume is 0.59x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Market structure supports continued technical momentum and trend continuation.",
+      "evidence": "Price remains in a strong uptrend above major moving averages, supported by a +37% 3-month return."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No near-term downside event triggers identified.",
+      "evidence": "The catalyst summary contains no negative fundamental or technical events."
+    }
+  },
+  "aggregate_score": 18,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

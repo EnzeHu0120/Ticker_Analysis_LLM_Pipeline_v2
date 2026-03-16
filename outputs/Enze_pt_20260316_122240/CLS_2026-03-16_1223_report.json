@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "CLS",
+    "company": "Celestica, Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Management has demonstrated strong operational execution, successfully capitalizing on end-market demand to drive significant top-line and bottom-line expansion.",
+      "evidence": "Net income grew 94.5% YoY alongside 28.4% revenue growth and meaningful margin expansion."
+    },
+    "competitive_advantage": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "The company benefits from high switching costs and entrenched relationships with key OEMs and hyperscalers in complex manufacturing and supply chain solutions.",
+      "evidence": "Provides integrated hardware platform solutions and supply chain services to sticky end-markets including aerospace, defense, and cloud-based service providers."
+    },
+    "growth_perspective": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust and accelerating structural growth driven by strong demand in connectivity, cloud, and advanced technology segments.",
+      "evidence": "Revenue growth accelerated to 28.4% YoY (up from 21.1% previously), with a 14.4% QoQ revenue increase and 94.5% YoY net income growth."
+    },
+    "balance_sheet_health": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Financial resilience is high, characterized by low leverage and an active deleveraging trend, providing ample flexibility.",
+      "evidence": "Debt-to-equity sits at a conservative 0.35x, with total debt decreasing 2.5% YoY and 0.9% QoQ."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "medium",
+      "thesis": "High-quality segment mix with significant exposure to secular growth tailwinds in cloud infrastructure and advanced industrial tech.",
+      "evidence": "Operations are concentrated in Advanced Technology Solutions and Connectivity and Cloud Solutions, directly serving hyperscalers and enterprise markets."
+    },
+    "technical_setup": {
+      "score": 1,
+      "confidence": "high",
+      "thesis": "The stock remains in a long-term uptrend but is currently undergoing a medium-term consolidation/pullback on weak volume.",
+      "evidence": "Price (270.98) is below the 50-DMA (292.14) but above the 200-DMA (248.37). RSI is neutral at 46.5, and recent volume is low at 0.47x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Continued fundamental improvements in profitability and leverage could act as triggers for positive earnings revisions.",
+      "evidence": "Inferred catalysts highlight a meaningful improvement in net margins (up 51 bps) and a decrease in leverage."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "There are no near-term event-driven downside triggers identified in the current data packet.",
+      "evidence": "The catalyst summary contains no negative fundamental, technical, or news-driven events."
+    }
+  },
+  "aggregate_score": 21,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

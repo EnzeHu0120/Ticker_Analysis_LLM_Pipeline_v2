@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "EWY",
+    "company": "iShares MSCI South Korea ETF",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "As a passively managed ETF, traditional corporate leadership metrics are not applicable.",
+      "evidence": "Fund is the iShares MSCI South Korea ETF; no officer or active management data provided."
+    },
+    "competitive_advantage": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "The fund provides passive exposure to a specific country index rather than possessing a traditional corporate economic moat.",
+      "evidence": "Tracks the free float-adjusted market capitalization-weighted index of large- and mid-cap Korean equities."
+    },
+    "growth_perspective": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No fundamental growth data is available for the underlying index constituents in the provided packet.",
+      "evidence": "Annual and quarterly trend summaries contain insufficient data."
+    },
+    "balance_sheet_health": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No aggregate balance sheet or funding metrics are provided for the underlying holdings.",
+      "evidence": "Debt-to-equity and free cash flow metrics are null."
+    },
+    "business_segment_quality": {
+      "score": 0,
+      "confidence": "medium",
+      "thesis": "The fund offers concentrated, non-diversified exposure to the South Korean equity market.",
+      "evidence": "Invests at least 80% of assets in the MSCI South Korea Index; noted as non-diversified."
+    },
+    "technical_setup": {
+      "score": 3,
+      "confidence": "high",
+      "thesis": "The ETF is in a strong uptrend with significant recent gains, though short-term momentum is cooling on light volume.",
+      "evidence": "Price (131.15) is above 50-day (124.67) and 200-day (90.41) MAs. 3-month return is +41.2%. However, MACD histogram is falling and recent volume is only 0.33x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Market-implied momentum and strong technical trends provide near-term upside support.",
+      "evidence": "Price remains in a strong uptrend above major moving averages, supported by a 41.2% 3-month return indicating speculative momentum."
+    },
+    "negative_catalysts": {
+      "score": 0,
+      "confidence": "low",
+      "thesis": "No specific event-driven downside catalysts are identified in the current packet.",
+      "evidence": "The catalyst summary contains no negative fundamental or technical triggers."
+    }
+  },
+  "aggregate_score": 6,
+  "recommendation": "Hold",
+  "valuation_flag": {
+    "label": "reasonable",
+    "confidence": "medium",
+    "summary": "Valuation appears broadly balanced relative to available fundamentals."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

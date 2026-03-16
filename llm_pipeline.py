@@ -1,84 +1,73 @@
 """
-llm_pipeline.py — LLM prompt runner.
+llm_pipeline.py
 
-Pulls fundamental data (fundamental_pipeline) and technical data (technical_pipeline),
-builds user prompts, runs Gemini/OpenAI for 1A/1B/1C + synthesis (Prompt 2), outputs JSON report.
-
-Data sources:
-- Fundamental: fundamental_pipeline.py
-- Technical: technical_pipeline.py
-- This module: LLM client and prompt orchestration only.
-
-Run: python llm_pipeline.py AAPL
+v2 orchestration entry point:
+- Stage 1 default: lean scorecard report (single main LLM call)
+- Stage 2 optional: full report extension (one extra cheaper synthesis call)
 """
 
 from __future__ import annotations
 
-import os
-import re
-import sys
-import json
+import argparse
 import datetime as dt
+import json
+import os
+import sys
 from pathlib import Path
-from dataclasses import dataclass
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 
-import numpy as np
 import pandas as pd
 import yfinance as yf
+try:
+    from google import genai
+except ImportError:  # pragma: no cover - environment-dependent
+    genai = None  # type: ignore[assignment]
 
-from google import genai
-from google.genai import types
-from openai import OpenAI
+try:
+    from openai import OpenAI
+except ImportError:  # pragma: no cover - environment-dependent
+    OpenAI = None  # type: ignore[assignment]
 
+from archetype import archetype_to_dict, classify_archetype
+from catalyst_pipeline import build_catalyst_inputs
+import fundamental_pipeline as fund_mod
+from llm_clients import GeminiRunner, OpenAIRunner
 from llm_config import load_llm_config
+from prompt_templates import FULL_REPORT_PROMPT_V2, SCORECARD_PROMPT_V2, SYSTEM_PROMPT_V2
+from report_schema import (
+    PROMPT_VERSION,
+    REPORT_VERSION,
+    compute_aggregate_score,
+    normalize_scorecard,
+    recommendation_from_score,
+)
+from report_validation import validate_v2_report
+import technical_pipeline as tech_mod
 
-# -------------------------
-# Load .env from project dir (secrets stay local, not in repo)
-# -------------------------
 THIS_DIR = Path(__file__).resolve().parent
 try:
     from dotenv import load_dotenv  # type: ignore[import-untyped]
+
     load_dotenv(THIS_DIR / ".env")
 except ImportError:
     pass
 
-# -------------------------
-# Data sources: fundamental + technical
-# -------------------------
 if str(THIS_DIR) not in sys.path:
     sys.path.insert(0, str(THIS_DIR))
 
-import fundamental_pipeline as fund_mod
-import technical_pipeline as tech_mod
-from archetype import classify_archetype, archetype_to_dict
-from catalyst_pipeline import build_catalyst_inputs
-from report_validation import validate_report
 
-
-# =========================
-# 1) Helpers: serialize DF -> prompt string
-# =========================
 def df_to_csv_str(df: pd.DataFrame, max_rows: int = 12, max_cols: int = 25) -> str:
-    """Compact CSV for prompt injection (keeps index)."""
     if df is None or df.empty:
         return "N/A (empty dataframe)"
-
     _df = df.copy()
-
-    # Make index readable
     try:
         _df.index = pd.to_datetime(_df.index).strftime("%Y-%m-%d")
     except Exception:
         _df.index = _df.index.astype(str)
-
-    # Cap size for token control
     if _df.shape[1] > max_cols:
         _df = _df.iloc[:, :max_cols]
     if _df.shape[0] > max_rows:
         _df = _df.tail(max_rows)
-
     return _df.to_csv(index=True)
 
 
@@ -94,33 +83,177 @@ def safe_json_dumps(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False)
 
 
-# =========================
-# 2) Technical snapshot: fetch price -> technical_pipeline
-# =========================
+def ensure_outputs_dir() -> Path:
+    out_dir = THIS_DIR / "outputs"
+    out_dir.mkdir(exist_ok=True)
+    return out_dir
+
+
+def ensure_score_rows_dir() -> Path:
+    out_dir = THIS_DIR / "score_rows"
+    out_dir.mkdir(exist_ok=True)
+    return out_dir
+
+
+def build_unique_output_path(
+    ticker: str,
+    analysis_date: str,
+    suffix: str = "report",
+    output_dir: Optional[Path] = None,
+) -> Path:
+    out_dir = output_dir if output_dir is not None else ensure_outputs_dir()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    time_tag = dt.datetime.now().strftime("%H%M")
+    base = f"{ticker}_{analysis_date}_{time_tag}_{suffix}"
+    candidate = out_dir / f"{base}.json"
+    idx = 2
+    while candidate.exists():
+        candidate = out_dir / f"{base}_run{idx}.json"
+        idx += 1
+    return candidate
+
+
+RATING_ALIASES = {
+    "overweight": "Overweight",
+    "equal-weight": "Equal-weight",
+    "equalweight": "Equal-weight",
+    "hold": "Hold",
+    "underweight": "Underweight",
+    "reduce": "Reduce",
+    "buy": "Overweight",
+    "sell": "Reduce",
+    "neutral": "Equal-weight",
+}
+
+
+def normalize_rating(report: Dict[str, Any]) -> None:
+    raw = (report.get("rating") or "").strip()
+    canonical = "Hold"
+    if raw:
+        raw_lower = raw.lower()
+        for alias, value in RATING_ALIASES.items():
+            if alias in raw_lower:
+                canonical = value
+                break
+    report["rating"] = canonical
+
+
+def normalize_price_target_matrix(report: Dict[str, Any]) -> None:
+    matrix = report.get("price_target_matrix")
+    if not isinstance(matrix, list):
+        return
+    by_key: Dict[str, Dict[str, Any]] = {}
+    for row in matrix:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get("scenario") or "").strip().lower()
+        if key == "consensus":
+            key = "base"
+        if key in {"bear", "base", "bull"} and key not in by_key:
+            fixed = dict(row)
+            if key == "base" and str(fixed.get("scenario") or "").strip().lower() == "consensus":
+                fixed["scenario"] = "Consensus"
+            elif key == "base" and not fixed.get("scenario"):
+                fixed["scenario"] = "Base"
+            by_key[key] = fixed
+    ordered = []
+    if "bear" in by_key:
+        ordered.append(by_key["bear"])
+    if "base" in by_key:
+        ordered.append(by_key["base"])
+    if "bull" in by_key:
+        ordered.append(by_key["bull"])
+    report["price_target_matrix"] = ordered
+
+
 def fetch_technical_snapshot(ticker: str, analysis_date: str, lookback_days: int = 365) -> Dict[str, Any]:
-    """Fetch price history and build technical snapshot via technical_pipeline (ta + summary for LLM)."""
     tk = yf.Ticker(ticker)
     end = pd.to_datetime(analysis_date) + pd.Timedelta(days=1)
     start = end - pd.Timedelta(days=lookback_days + 30)
     hist = tk.history(start=start, end=end, interval="1d")
-
     if hist is None or hist.empty:
         return {"ticker": ticker, "analysis_date": analysis_date, "note": "No price history returned."}
-
     hist = hist.rename(columns={c: c.replace(" ", "") for c in hist.columns})
     return tech_mod.build_technical_snapshot_dict(hist, ticker, analysis_date)
 
 
-# =========================
-# 3) Quarterly fetch (latest 5 quarters) — from fundamental_pipeline
-# =========================
+def fetch_top_indicator_chart_data(
+    ticker: str,
+    analysis_date: str,
+    lookback_days: int = 220,
+) -> Dict[str, list[Dict[str, Any]]]:
+    """
+    Build compact timeseries payload for lightweight full-report visualization.
+    """
+    tk = yf.Ticker(ticker)
+    end = pd.to_datetime(analysis_date) + pd.Timedelta(days=1)
+    start = end - pd.Timedelta(days=lookback_days + 30)
+    hist = tk.history(start=start, end=end, interval="1d")
+    if hist is None or hist.empty:
+        return {
+            "price": [],
+            "sma_20": [],
+            "sma_50": [],
+            "sma_200": [],
+            "ema_20": [],
+            "bb_high": [],
+            "bb_low": [],
+            "macd": [],
+            "macd_signal": [],
+            "macd_hist": [],
+            "rsi_14": [],
+            "volume": [],
+        }
+
+    hist = hist.rename(columns={c: c.replace(" ", "") for c in hist.columns})
+    feat = tech_mod.build_technical_features(hist)
+    feat = feat.tail(180).copy()
+    if feat.empty:
+        return {
+            "price": [],
+            "sma_20": [],
+            "sma_50": [],
+            "sma_200": [],
+            "ema_20": [],
+            "bb_high": [],
+            "bb_low": [],
+            "macd": [],
+            "macd_signal": [],
+            "macd_hist": [],
+            "rsi_14": [],
+            "volume": [],
+        }
+
+    def _series(col: str) -> list[Dict[str, Any]]:
+        if col not in feat.columns:
+            return []
+        ser = pd.to_numeric(feat[col], errors="coerce").dropna()
+        out: list[Dict[str, Any]] = []
+        for idx, val in ser.items():
+            out.append({"time": pd.to_datetime(idx).strftime("%Y-%m-%d"), "value": float(val)})
+        return out
+
+    return {
+        "price": _series("Close"),
+        "sma_20": _series("sma_20"),
+        "sma_50": _series("sma_50"),
+        "sma_200": _series("sma_200"),
+        "ema_20": _series("ema_20"),
+        "bb_high": _series("bb_high"),
+        "bb_low": _series("bb_low"),
+        "macd": _series("macd"),
+        "macd_signal": _series("macd_signal"),
+        "macd_hist": _series("macd_diff"),
+        "rsi_14": _series("rsi_14"),
+        "volume": _series("Volume"),
+    }
+
+
 def fetch_quarterly_5_periods(ticker: str, periods: int = 5) -> Dict[str, pd.DataFrame]:
     tk = yf.Ticker(ticker)
-
     income_raw = fund_mod.merge_statement_sources(tk, ["quarterly_income_stmt", "quarterly_financials"])
     balance_raw = fund_mod.merge_statement_sources(tk, ["quarterly_balance_sheet", "quarterly_balancesheet"])
     cash_raw = fund_mod.merge_statement_sources(tk, ["quarterly_cashflow", "quarterly_cash_flow"])
-
     income_rows = fund_mod.statement_to_rows(income_raw)
     balance_rows = fund_mod.statement_to_rows(balance_raw)
     cash_rows = fund_mod.statement_to_rows(cash_raw)
@@ -137,722 +270,535 @@ def fetch_quarterly_5_periods(ticker: str, periods: int = 5) -> Dict[str, pd.Dat
     }
 
 
-# =========================
-# 4) Prompt templates
-# =========================
-RATING_OPTIONS = "Overweight | Equal-weight | Hold | Underweight | Reduce"
-
-SYSTEM_PROMPT = (
-    "You are a professional financial analyst. "
-    "Always respond in valid JSON format only — no markdown, no preamble, no extra text outside JSON. "
-    "All monetary values should be raw numbers (no currency symbols). "
-    "You must balance growth, profitability, balance sheet quality, valuation, and risk; "
-    "do NOT mechanically favor high growth or strong share price momentum when the balance sheet is weak, "
-    "cash burn is high, or shareholder dilution is severe. "
-    "For highly speculative companies with weak or nonexistent profitability, you must treat the risk as elevated "
-    "even if technical momentum is strong. "
-    'Sentiment labels must be one of: "Strongly Positive", "Positive", "Neutral", '
-    '"Cautionary", "Negative", "Strongly Negative". '
-    f'When outputting a rating, you MUST use exactly one of: {RATING_OPTIONS}.'
-)
-
-PROMPT_1A = """Analyze the annual balance sheet and income statement data below for {TICKER}.
-Return the top 5 financial signals observed, combining both balance sheet structure and income/profitability trends.
-
-=== ANNUAL BALANCE SHEET (last 5 fiscal years) ===
-{ANNUAL_BALANCE_SHEET_DATA}
-
-=== ANNUAL INCOME STATEMENT & CASH FLOW (last 5 fiscal years) ===
-{ANNUAL_INCOME_STATEMENT_DATA}
-
-=== DERIVED ANNUAL METRICS (computed in Python) ===
-{ANNUAL_METRICS_DATA}
-
-Return a JSON object with this exact schema:
-{{
- "report_metadata": {{
-   "company": string,
-   "ticker": string,
-   "period": string,
-   "analysis_type": "Annual Fundamental Analysis"
- }},
- "financial_signals": [
-   {{
-     "rank": number,
-     "signal": string,
-     "sentiment": string,
-     "observation": string,
-     "key_metrics": {{ "metric_name": value }},
-     "strategic_impact": string
-   }}
- ],
- "summary": string
-}}
-"""
-
-PROMPT_1B = """Analyze the latest quarterly balance sheet and income statement data below for {TICKER}. Focus on signals that DEVIATE FROM or AMPLIFY typical annual trends.
-Identify acceleration, reversals, or anomalies.
-
-=== QUARTERLY BALANCE SHEET (latest 5 quarters) ===
-{QUARTERLY_BALANCE_SHEET_DATA}
-
-=== QUARTERLY INCOME STATEMENT (latest 5 quarters) ===
-{QUARTERLY_INCOME_STATEMENT_DATA}
-
-Return a JSON object with this exact schema:
-{{
- "report_metadata": {{
-   "company": string,
-   "ticker": string,
-   "period": string,
-   "analysis_type": "Quarterly Deviation Analysis"
- }},
- "deviation_signals": [
-   {{
-     "rank": number,
-     "signal": string,
-     "sentiment": string,
-     "deviation_type": "Acceleration | Reversal | Anomaly | Confirmation",
-     "observation": string,
-     "quarterly_trend": string,
-     "key_metrics": {{ "metric_name": value }}
-   }}
- ],
- "yoy_highlights": {{
-   "revenue_growth": string,
-   "operating_income_growth": string,
-   "interest_expense_growth": string,
-   "depreciation_growth": string
- }},
- "summary": string
-}}
-"""
-
-PROMPT_1C = """Using the technical snapshot below for {TICKER} as of {ANALYSIS_DATE}, generate the top 5 technical analysis signals.
-The "TECHNICAL SUMMARY (for LLM)" is a compact, high-info-density summary of key indicators; the JSON snapshot contains full numeric values.
-Use moving averages (SMA/EMA), RSI, MACD, Stoch, Williams %R, ATR, Bollinger Bands, volume (OBV/CMF/MFI), and support/resistance as relevant.
-If data is incomplete, flag uncertainty in the relevant fields but still provide the best available technical assessment.
-
-=== TECHNICAL SUMMARY (for LLM) ===
-{TECHNICAL_SUMMARY_TEXT}
-
-=== FULL TECHNICAL SNAPSHOT (JSON) ===
-{TECHNICAL_SNAPSHOT_JSON}
-
-Return a JSON object with this exact schema:
-{{
- "report_metadata": {{
-   "ticker": string,
-   "analysis_date": string,
-   "current_price": number,
-   "analysis_type": "Technical Analysis",
-   "data_confidence": "High | Medium | Low"
- }},
- "technical_signals": [
-   {{
-     "rank": number,
-     "signal": string,
-     "sentiment": string,
-     "indicator_value": string,
-     "observation": string,
-     "action_implication": string
-   }}
- ],
- "key_levels": {{
-   "support": number,
-   "resistance_near": number,
-   "resistance_major": number,
-   "ma_50": number,
-   "ma_200": number
- }},
- "technical_summary": string
-}}
-"""
-
-PROMPT_1D_CATALYSTS = """You are evaluating catalysts for {TICKER} based ONLY on the structured evidence provided.
-
-You MUST NOT invent catalysts that are not supported by:
-- the external news items,
-- the inferred fundamental/technical catalysts,
-- or explicitly described industry/sector context.
-
-Your task is to classify and enrich catalysts into a structured list.
-
-=== COMPANY NEWS (raw items) ===
-{COMPANY_NEWS_JSON}
-
-=== INFERRED FUNDAMENTAL CATALYSTS (from Python metrics) ===
-{FUNDAMENTAL_INFERRED_JSON}
-
-=== INFERRED TECHNICAL / MARKET-IMPLIED CATALYSTS (from Python snapshot) ===
-{TECHNICAL_INFERRED_JSON}
-
-=== INDUSTRY / ECOSYSTEM CANDIDATES (may be empty in this version) ===
-{INDUSTRY_CANDIDATES_JSON}
-
-Return a JSON object with a single field:
-{{
-  "structured_catalysts": [
-    {{
-      "category": "company | industry | speculative",
-      "description": string,
-      "direction": "positive | negative | neutral",
-      "source_type": "reported | inferred | market_implied | speculative",
-      "time_horizon": "near_term | medium_term | long_term",
-      "confidence": "Low | Medium | High",
-      "impact_level": "Low | Medium | High",
-      "is_already_priced": "Yes | No | Partially",
-      "monitoring_trigger": string,
-      "evidence_summary": string
-    }}
-  ]
-}}
-
-Be conservative when assigning confidence and impact_level. If evidence is weak or mixed,
-you must lower confidence instead of overstating the catalyst.
-Use direction "neutral" only when impact has no clear positive/negative bias or uncertainty is too high
-to call; pair with confidence "Low" when the catalyst is highly uncertain.
-"""
-
-
-PROMPT_2 = """Synthesize the fundamental, technical, archetype, and catalyst analyses below for {TICKER}.
-Identify where fundamentals and technicals diverge or converge, and produce a unified investment outlook
-with a price target matrix, a single, hard rating, structured signals, and structured catalysts.
-
-=== COMPANY ARCHETYPE (from Python rules) ===
-{ARCHETYPE_JSON}
-
-=== ANNUAL FUNDAMENTAL ANALYSIS ===
-{OUTPUT_FROM_PROMPT_1A}
-
-=== QUARTERLY DEVIATION ANALYSIS ===
-{OUTPUT_FROM_PROMPT_1B}
-
-=== TECHNICAL ANALYSIS ===
-{OUTPUT_FROM_PROMPT_1C}
-
-=== STRUCTURED CATALYST INPUTS (Prompt 1D output) ===
-{OUTPUT_FROM_PROMPT_1D}
-
-You must follow these constraints:
-- The "rating" field is MANDATORY and must be exactly one of: Overweight | Equal-weight | Hold | Underweight | Reduce.
-- The rating should reflect 6–12 month risk/reward, not just narrative attractiveness.
-- If you are uncertain, default to "Hold" rather than omitting or leaving the rating empty.
-- Do NOT invent catalysts that are not present in or implied by the upstream evidence.
-- Do NOT automatically treat technical pullbacks as buying opportunities; only do so when fundamentals, valuation, and catalysts support it.
-- Do NOT infer liquidity distress from working capital alone unless clearly justified by the statements or news.
-- Avoid exaggerated or promotional language; favor precise, balanced phrasing.
-- If evidence is mixed, reduce confidence instead of forcing a strong directional call.
-
-You MUST always output:
-- a "rating"
-- a balanced discussion of risks, catalysts, and valuation
-- a non-empty "key_catalysts" array (use at least an empty array if no clear catalysts exist)
-- a "signals" array covering the main investment dimensions
-- a "structured_catalysts" array classifying catalysts by type.
-
-The "signals" array is a structured scoring system. For each signal, you must specify:
-- "type": one of ["growth", "profitability", "valuation", "balance_sheet", "momentum", "industry_catalyst", "company_catalyst", "speculative_catalyst", "risk", "management_execution"]
-- "strength": one of ["strong_positive", "positive", "cautious", "strong_negative"]
-- "reason": a concise natural-language explanation linking back to fundamentals, technicals, or catalysts.
-
-The "structured_catalysts" array is a structured catalyst representation. You MUST use only catalysts
-that are supported by upstream evidence (Prompts 1A/1B/1C/1D). This is not a place to speculate freely.
-For each catalyst, you must output:
-- "category": one of ["company", "industry", "speculative"]
-- "description": a concise description of the catalyst
-- "direction": "positive", "negative", or "neutral" (use neutral when impact is unclear or evidence insufficient; use confidence Low when highly uncertain)
-- "source_type": "reported", "inferred", "market_implied", or "speculative"
-- "time_horizon": one of ["near_term", "medium_term", "long_term"]
-- "confidence": one of ["Low", "Medium", "High"]
-- "impact_level": one of ["Low", "Medium", "High"] indicating impact on the investment case.
-- "is_already_priced": "Yes", "No", or "Partially"
-- "monitoring_trigger": a concrete future event or datapoint that would confirm/negate the catalyst
-- "evidence_summary": 1–2 sentences summarizing the underlying evidence.
-
-The "price_target_matrix" array MUST contain exactly three objects, one for each scenario: Bear, Consensus, Bull (in that order).
-Each scenario MUST be analyzed independently, with its own price_target_range and key_assumption; you may NOT merge scenarios into a single combined row.
-{{
- "report_metadata": {{
-   "company": string,
-   "ticker": string,
-   "analysis_date": string,
-   "analysis_type": "Fundamental + Technical Synthesis"
- }},
- "rating": "Overweight | Equal-weight | Hold | Underweight | Reduce",
- "rating_rationale": string,
- "core_divergence": {{
-   "fundamental_stance": string,
-   "technical_stance": string,
-   "divergence_summary": string
- }},
- "synthesized_signals": [
-   {{
-     "rank": number,
-     "signal": string,
-     "sentiment": string,
-     "fundamental_driver": string,
-     "technical_driver": string,
-     "synthesis": string
-   }}
- ],
- "rating_dimensions": {{
-   "expected_return_6_12m": "strong_upside | moderate_upside | flat | moderate_downside | strong_downside",
-   "thesis_conviction": "Low | Medium | High",
-   "balance_sheet_risk": "Low | Medium | High",
-   "catalyst_quality": "Low | Medium | High",
-   "valuation_stretch": "cheap | fair | expensive"
- }},
- "signals": [
-   {{
-     "type": "growth | profitability | valuation | balance_sheet | momentum | industry_catalyst | company_catalyst | speculative_catalyst | risk | management_execution",
-     "strength": "strong_positive | positive | cautious | strong_negative",
-     "reason": string
-   }}
- ],
- "price_target_matrix": [
-   {{
-    "scenario": "Bear",
-    "timeline": string,
-    "price_target_range": {{ "low": number, "high": number }},
-    "key_assumption": string
-  }},
-  {{
-    "scenario": "Consensus",
-    "timeline": string,
-    "price_target_range": {{ "low": number, "high": number }},
-    "key_assumption": string
-  }},
-  {{
-    "scenario": "Bull",
-     "timeline": string,
-     "price_target_range": {{ "low": number, "high": number }},
-     "key_assumption": string
-   }}
- ],
- "overall_outlook": string,
- "key_risks": [string],
- "key_catalysts": [string],
- "structured_catalysts": [
-   {{
-     "category": "company | industry | speculative",
-     "description": string,
-     "direction": "positive | negative | neutral",
-     "source_type": "reported | inferred | market_implied | speculative",
-     "time_horizon": "short_term | medium_term | long_term",
-     "confidence": "Low | Medium | High",
-     "impact_level": "Low | Medium | High",
-     "is_already_priced": "Yes | No | Partially",
-     "monitoring_trigger": string,
-     "evidence_summary": string
-   }}
- ]
-}}
-"""
-
-
-# =========================
-# 5) LLM wrapper (JSON Mode + defensive parsing)
-# =========================
-def extract_json(text: str) -> Any:
-    text = (text or "").strip()
+def _float_or_none(value: Any) -> Optional[float]:
     try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        m = re.search(r"\{.*\}", text, flags=re.DOTALL)
-        if not m:
-            raise
-        return json.loads(m.group(0))
-
-
-@dataclass
-class GeminiRunner:
-    model: str
-    client: Any
-
-    def run_json(self, prompt: str, temperature: float = 0.2) -> Any:
-        cfg = types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            response_mime_type="application/json",
-            temperature=temperature,
-        )
-        resp = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=cfg,
-        )
-        return extract_json(resp.text)
-
-
-@dataclass
-class OpenAIRunner:
-    model: str
-    client: Any
-
-    def run_json(self, prompt: str, temperature: float = 0.2) -> Any:
-        messages = [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt},
-        ]
-        resp = self.client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-        )
-        content = resp.choices[0].message.content
-        if isinstance(content, list):
-            text = "".join(
-                part.get("text", "")
-                for part in content
-                if isinstance(part, dict)
-            )
-        else:
-            text = str(content or "")
-        return extract_json(text)
-
-
-# =========================
-# 6) Utilities
-# =========================
-def get_company_name(ticker: str) -> Optional[str]:
-    try:
-        info = yf.Ticker(ticker).info or {}
-        return info.get("shortName") or info.get("longName") or info.get("displayName")
-    except Exception:
+        if value is None:
+            return None
+        out = float(value)
+        if pd.isna(out):
+            return None
+        return out
+    except (TypeError, ValueError):
         return None
 
 
-def ensure_outputs_dir() -> Path:
-    out_dir = THIS_DIR / "outputs"
-    out_dir.mkdir(exist_ok=True)
-    return out_dir
+def _latest(metrics_df: pd.DataFrame, col: str) -> Optional[float]:
+    if metrics_df is None or metrics_df.empty or col not in metrics_df.columns:
+        return None
+    return _float_or_none(pd.to_numeric(metrics_df[col], errors="coerce").iloc[-1])
 
 
-def build_unique_output_path(ticker: str, analysis_date: str) -> Path:
-    """
-    Build an outputs path that does NOT overwrite previous runs.
-    We include the current time to the minute in the filename, and if a file
-    still exists (multiple runs within the same minute), we append a suffix.
-
-    Examples (for ticker=T, analysis_date=2026-03-09, time ~14:37):
-    - T_2026-03-09_1437_report.json
-    - T_2026-03-09_1437_report_run2.json
-    """
-    out_dir = ensure_outputs_dir()
-    time_tag = dt.datetime.now().strftime("%H%M")
-    base = f"{ticker}_{analysis_date}_{time_tag}_report"
-    candidate = out_dir / f"{base}.json"
-    run_idx = 2
-    while candidate.exists():
-        candidate = out_dir / f"{base}_run{run_idx}.json"
-        run_idx += 1
-    return candidate
+def _prev(metrics_df: pd.DataFrame, col: str) -> Optional[float]:
+    if metrics_df is None or metrics_df.empty or col not in metrics_df.columns or len(metrics_df.index) < 2:
+        return None
+    return _float_or_none(pd.to_numeric(metrics_df[col], errors="coerce").iloc[-2])
 
 
-# Canonical ratings: Overweight | Equal-weight | Hold | Underweight | Reduce
-RATING_ALIASES = {
-    "overweight": "Overweight",
-    "equal-weight": "Equal-weight",
-    "equalweight": "Equal-weight",
-    "hold": "Hold",
-    "underweight": "Underweight",
-    "reduce": "Reduce",
-    "buy": "Overweight",
-    "sell": "Reduce",
-    "neutral": "Equal-weight",
-}
+def summarize_annual_trend(metrics_df: pd.DataFrame) -> Dict[str, Any]:
+    out = {
+        "revenue_growth_yoy_last": _latest(metrics_df, "Revenue_Growth_YoY"),
+        "revenue_growth_yoy_prev": _prev(metrics_df, "Revenue_Growth_YoY"),
+        "net_income_growth_yoy_last": _latest(metrics_df, "NetIncome_Growth_YoY"),
+        "operating_margin_last": _latest(metrics_df, "Operating_Margin"),
+        "net_margin_last": _latest(metrics_df, "Net_Margin"),
+        "debt_to_equity_last": _latest(metrics_df, "Debt_to_Equity"),
+        "free_cash_flow_last": _latest(metrics_df, "Free_Cash_Flow"),
+        "capex_intensity_last": _latest(metrics_df, "Capex_Intensity"),
+        "rd_intensity_last": _latest(metrics_df, "RD_Intensity"),
+    }
+    out["asset_growth_yoy_last"] = _latest(metrics_df, "Asset_Growth_YoY")
+    out["debt_growth_yoy_last"] = _latest(metrics_df, "Debt_Growth_YoY")
+    out["effective_tax_rate_last"] = _latest(metrics_df, "Effective_Tax_Rate")
+    return out
 
 
-def normalize_rating(report: Dict[str, Any]) -> None:
-    """Enforce rating to a canonical English value; set rationale if missing.
+def summarize_quarterly_delta(q_out: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
+    qis = q_out.get("quarterly_income_statement", pd.DataFrame())
+    qbs = q_out.get("quarterly_balance_sheet", pd.DataFrame())
+    if qis.empty and qbs.empty:
+        return {"status": "insufficient_data"}
 
-    If the raw rating is missing or cannot be mapped, fall back to a conservative
-    default of 'Hold'.
-    """
-    raw = (report.get("rating") or "").strip()
-    canonical = "Hold"
-    if raw:
-        raw_lower = raw.lower()
-        for alias, value in RATING_ALIASES.items():
-            if alias in raw_lower:
-                canonical = value
-                break
-        else:
-            if "overweight" in raw_lower or "buy" in raw_lower:
-                canonical = "Overweight"
-            elif "underweight" in raw_lower or "reduce" in raw_lower or "sell" in raw_lower:
-                canonical = "Reduce"
-            elif "equal" in raw_lower or "neutral" in raw_lower:
-                canonical = "Equal-weight"
-            elif "hold" in raw_lower:
-                canonical = "Hold"
-    report["rating"] = canonical
-    if not report.get("rating_rationale"):
-        report["rating_rationale"] = "Combined fundamental and technical synthesis."
+    def _delta(df: pd.DataFrame, col_candidates: list[str]) -> Optional[float]:
+        for col in col_candidates:
+            if col in df.columns:
+                s = pd.to_numeric(df[col], errors="coerce").dropna()
+                if len(s) >= 2 and s.iloc[-2] != 0:
+                    return float((s.iloc[-1] - s.iloc[-2]) / abs(s.iloc[-2]))
+        return None
+
+    return {
+        "qoq_revenue_change": _delta(qis, ["Total Revenue", "TotalRevenue", "Revenue"]),
+        "qoq_net_income_change": _delta(
+            qis, ["Net Income", "NetIncome", "Net Income Common Stockholders", "NetIncomeCommonStockholders"]
+        ),
+        "qoq_debt_change": _delta(qbs, ["Total Debt", "TotalDebt"]),
+    }
 
 
-def rating_from_dimensions(report: Dict[str, Any]) -> str:
-    """
-    Map structured rating dimensions into a canonical rating.
-    Used as a stabilizing layer so the final rating does not rely solely
-    on free-form judgment.
-    """
-    dims = report.get("rating_dimensions") or {}
-    expected = dims.get("expected_return_6_12m")
-    conviction = dims.get("thesis_conviction")
-    bs_risk = dims.get("balance_sheet_risk")
-    catalyst_q = dims.get("catalyst_quality")
-    valuation = dims.get("valuation_stretch")
+def build_company_context(meta_df: pd.DataFrame, ticker: str) -> Dict[str, Any]:
+    row = meta_df.iloc[0].to_dict() if isinstance(meta_df, pd.DataFrame) and not meta_df.empty else {}
+    info = {}
+    try:
+        info = yf.Ticker(ticker).info or {}
+    except Exception:
+        info = {}
 
-    # Base score from expected return
-    score = 0
-    if expected == "strong_upside":
-        score += 2
-    elif expected == "moderate_upside":
-        score += 1
-    elif expected == "flat":
-        score += 0
-    elif expected == "moderate_downside":
-        score -= 1
-    elif expected == "strong_downside":
-        score -= 2
+    officers = info.get("companyOfficers")
+    top_officers = []
+    if isinstance(officers, list):
+        for x in officers[:3]:
+            if not isinstance(x, dict):
+                continue
+            top_officers.append(
+                {
+                    "name": x.get("name"),
+                    "title": x.get("title"),
+                    "yearBorn": x.get("yearBorn"),
+                }
+            )
 
-    # Adjust for conviction
-    if conviction == "High":
-        score *= 1.2
-    elif conviction == "Low":
-        score *= 0.8
-
-    # Penalize balance sheet risk and expensive valuation
-    if bs_risk == "High":
-        score -= 1.0
-    if valuation == "expensive":
-        score -= 0.5
-    elif valuation == "cheap":
-        score += 0.5
-
-    # Boost for strong catalyst quality
-    if catalyst_q == "High":
-        score += 0.5
-    elif catalyst_q == "Low":
-        score -= 0.5
-
-    # Map numeric score to discrete rating
-    if score >= 1.5:
-        return "Overweight"
-    if 0.5 <= score < 1.5:
-        return "Equal-weight"
-    if -0.5 < score < 0.5:
-        return "Hold"
-    if -1.5 < score <= -0.5:
-        return "Underweight"
-    return "Reduce"
+    return {
+        "shortName": row.get("ShortName") or info.get("shortName") or info.get("longName"),
+        "longBusinessSummary": info.get("longBusinessSummary"),
+        "sector": row.get("Sector") or info.get("sector"),
+        "industry": row.get("Industry") or info.get("industry"),
+        "marketCap": row.get("MarketCap") or info.get("marketCap"),
+        "currency": row.get("Currency") or info.get("currency"),
+        "exchange": row.get("Exchange") or info.get("exchange"),
+        "country": row.get("Country") or info.get("country"),
+        "officers": top_officers,
+    }
 
 
-def normalize_price_target_matrix(report: Dict[str, Any]) -> None:
-    """
-    Light normalization for price_target_matrix:
-    - Keep at most one entry per scenario (Bear / Consensus / Bull)
-    - Order them as [Bear, Consensus, Bull] if present
+def build_valuation_packet(metrics_df: pd.DataFrame, company_context: Mapping[str, Any], ticker: str) -> Dict[str, Any]:
+    info = {}
+    try:
+        info = yf.Ticker(ticker).info or {}
+    except Exception:
+        info = {}
 
-    It does NOT fabricate new scenarios or copy assumptions; each regime
-    must be analyzed separately by the LLM.
-    """
-    matrix = report.get("price_target_matrix")
-    if not isinstance(matrix, list) or not matrix:
-        return
+    market_cap = _float_or_none(company_context.get("marketCap"))
+    fcf = _latest(metrics_df, "Free_Cash_Flow")
+    p_fcf = None
+    if market_cap and fcf and fcf > 0:
+        p_fcf = market_cap / fcf
 
-    scenarios = ["Bear", "Consensus", "Bull"]
-    by_scenario: Dict[str, Dict[str, Any]] = {}
-
-    for row in matrix:
-        if not isinstance(row, dict):
-            continue
-        scen = str(row.get("scenario", ""))
-        if scen in scenarios and scen not in by_scenario:
-            by_scenario[scen] = row
-
-    if not by_scenario:
-        return
-
-    # Rebuild in canonical order, keeping only scenarios the model actually provided.
-    report["price_target_matrix"] = [
-        by_scenario[s] for s in scenarios if s in by_scenario
-    ]
+    packet = {
+        "market_cap": market_cap,
+        "trailing_pe": _float_or_none(info.get("trailingPE")),
+        "forward_pe": _float_or_none(info.get("forwardPE")),
+        "ev_to_ebitda": _float_or_none(info.get("enterpriseToEbitda")),
+        "ev_to_sales": _float_or_none(info.get("enterpriseToRevenue")),
+        "price_to_sales": _float_or_none(info.get("priceToSalesTrailing12Months")),
+        "p_fcf_proxy": p_fcf,
+        "pre_profit": bool((_latest(metrics_df, "NetIncome") or 0) < 0),
+    }
+    return packet
 
 
-# =========================
-# 7) Orchestration: pull fundamental + technical -> prompts -> LLM
-# =========================
-def main():
-    if len(sys.argv) >= 2:
-        ticker = sys.argv[1].strip().upper()
+def build_valuation_flag(valuation_packet: Mapping[str, Any]) -> Dict[str, Any]:
+    pe = _float_or_none(valuation_packet.get("trailing_pe"))
+    ps = _float_or_none(valuation_packet.get("price_to_sales"))
+    pfcf = _float_or_none(valuation_packet.get("p_fcf_proxy"))
+    pre_profit = bool(valuation_packet.get("pre_profit"))
+
+    label = "reasonable"
+    confidence = "medium"
+    summary = "Valuation appears broadly balanced relative to available fundamentals."
+
+    if pre_profit:
+        if ps is not None and ps >= 12:
+            label = "stretched"
+            summary = "Pre-profit profile with elevated sales multiple."
+        elif ps is not None and ps <= 3:
+            label = "cheap"
+            summary = "Pre-profit profile with modest sales multiple."
     else:
-        ticker = input("Enter ticker (e.g., ORCL, AAPL, MSFT, ^GSPC): ").strip().upper()
+        if (pe is not None and pe >= 40) or (pfcf is not None and pfcf >= 45):
+            label = "stretched"
+            summary = "Earnings/cash-flow multiples imply rich valuation."
+        elif (pe is not None and pe <= 12) or (pfcf is not None and pfcf <= 12):
+            label = "cheap"
+            summary = "Earnings/cash-flow multiples screen inexpensive."
+        elif pe is not None and pe >= 28:
+            label = "full"
+            summary = "Multiples are above long-run market averages."
 
-    if not ticker:
-        raise ValueError("Ticker cannot be empty.")
+    if pe is None and ps is None and pfcf is None:
+        confidence = "low"
+        summary = "Limited valuation inputs available."
 
-    analysis_date = os.getenv("ANALYSIS_DATE") or dt.date.today().isoformat()
-    company_name = get_company_name(ticker)
+    return {"label": label, "confidence": confidence, "summary": summary}
 
-    # ---------- Fundamental data ----------
-    annual_out = fund_mod.fetch_annual_5_periods_with_metrics(ticker, periods=5)
-    annual_bs = annual_out.get("balance_sheet", pd.DataFrame())
-    annual_is = annual_out.get("income_statement", pd.DataFrame())
-    annual_cf = annual_out.get("cash_flow", pd.DataFrame())
-    annual_metrics = annual_out.get("metrics", pd.DataFrame())
 
-    annual_bs_str = df_to_csv_str(annual_bs, max_rows=6)
-    annual_is_cf = pd.concat(
-        [prefix_columns(annual_is, "IS_"), prefix_columns(annual_cf, "CF_")],
-        axis=1,
-    )
-    annual_is_cf_str = df_to_csv_str(annual_is_cf, max_rows=6)
-    annual_metrics_str = df_to_csv_str(annual_metrics.round(6), max_rows=6)
+def build_risk_flags(
+    metrics_df: pd.DataFrame,
+    tech_snapshot: Mapping[str, Any],
+    quarterly_delta: Mapping[str, Any],
+    archetype_type: Optional[str] = None,
+) -> list[Dict[str, str]]:
+    flags: list[Dict[str, str]] = []
+    d2e = _latest(metrics_df, "Debt_to_Equity")
+    fcf = _latest(metrics_df, "Free_Cash_Flow")
+    ni = _latest(metrics_df, "NetIncome")
+    r3m = _float_or_none(tech_snapshot.get("return_3m"))
+    trend = str(tech_snapshot.get("trend_regime") or "")
+    q_rev = _float_or_none(quarterly_delta.get("qoq_revenue_change"))
 
-    # ---------- Quarterly (latest 5) ----------
-    q_out = fetch_quarterly_5_periods(ticker, periods=5)
-    q_bs_str = df_to_csv_str(q_out["quarterly_balance_sheet"], max_rows=6)
-    q_is_str = df_to_csv_str(q_out["quarterly_income_statement"], max_rows=6)
+    if d2e is not None and d2e > 2.0:
+        flags.append(
+            {"type": "balance_sheet_risk", "severity": "high", "summary": "Leverage remains elevated versus equity base."}
+        )
+    if ni is not None and ni < 0 and (fcf is None or fcf < 0):
+        flags.append(
+            {"type": "dilution_risk", "severity": "medium", "summary": "Losses with weak cash generation may increase financing pressure."}
+        )
+    if trend in {"downtrend", "strong_downtrend"} or (r3m is not None and r3m < -0.25):
+        flags.append(
+            {"type": "technical_breakdown_risk", "severity": "medium", "summary": "Price action indicates weak trend or recent breakdown risk."}
+        )
+    if q_rev is not None and q_rev < -0.15:
+        flags.append(
+            {"type": "execution_risk", "severity": "medium", "summary": "Recent quarterly revenue decline raises near-term execution risk."}
+        )
+    # Liquidity: negative FCF with elevated leverage suggests refinancing/cash strain.
+    if fcf is not None and fcf < 0 and d2e is not None and d2e > 1.0:
+        flags.append(
+            {"type": "liquidity_risk", "severity": "medium", "summary": "Negative free cash flow with meaningful debt may pressure liquidity."}
+        )
+    # Cyclicality: archetype signals exposure to industrial/materials cycles.
+    if archetype_type == "cyclical_industrial":
+        flags.append(
+            {"type": "cyclicality_risk", "severity": "low", "summary": "Sector classified as cyclical; earnings may be more volatile through cycles."}
+        )
 
-    # ---------- Technical data ----------
-    tech_snap = fetch_technical_snapshot(ticker, analysis_date)
-    tech_snap_json = safe_json_dumps(tech_snap)
-    technical_summary_text = tech_snap.get("technical_summary_text", "N/A")
+    if not flags:
+        flags.append(
+            {"type": "execution_risk", "severity": "low", "summary": "No acute red flag from current structured inputs."}
+        )
+    return flags
 
-    # ---------- Archetype (Prompt 0 equivalent, rule-based) ----------
+
+def build_top_signal_views(scorecard: Mapping[str, Mapping[str, Any]]) -> Dict[str, list[Dict[str, Any]]]:
+    technical = [
+        {"label": "trend_regime", **dict(scorecard.get("technical_setup") or {})},
+        {"label": "momentum_rsi", **dict(scorecard.get("technical_setup") or {})},
+        {"label": "macd_confirmation", **dict(scorecard.get("technical_setup") or {})},
+    ]
+    fundamental_keys = [
+        "leadership",
+        "competitive_advantage",
+        "growth_perspective",
+        "balance_sheet_health",
+        "business_segment_quality",
+    ]
+    fundamentals: list[Dict[str, Any]] = []
+    for key in fundamental_keys:
+        row = scorecard.get(key) or {}
+        item = {"label": key, **dict(row)}
+        fundamentals.append(item)
+
+    def _abs_score(item: Mapping[str, Any]) -> int:
+        try:
+            return abs(int(item.get("score", 0)))
+        except (TypeError, ValueError):
+            return 0
+
+    fundamentals = sorted(fundamentals, key=_abs_score, reverse=True)[:3]
+    return {
+        "top_technical_signals": technical,
+        "top_fundamental_signals": fundamentals,
+    }
+
+
+def build_fundamental_indicator_chart_data(metrics_df: pd.DataFrame) -> Dict[str, list[Dict[str, Any]]]:
+    """
+    Build compact time-series payload for fundamental signal visualization.
+    """
+    if metrics_df is None or metrics_df.empty:
+        return {
+            "revenue_growth_yoy": [],
+            "net_income_growth_yoy": [],
+            "net_margin": [],
+            "operating_margin": [],
+            "debt_to_equity": [],
+            "free_cash_flow": [],
+        }
+
+    frame = metrics_df.copy()
+    frame = frame.tail(8)
+
+    def _series(col: str) -> list[Dict[str, Any]]:
+        if col not in frame.columns:
+            return []
+        ser = pd.to_numeric(frame[col], errors="coerce").dropna()
+        out: list[Dict[str, Any]] = []
+        for idx, val in ser.items():
+            out.append({"time": pd.to_datetime(idx).strftime("%Y-%m-%d"), "value": float(val)})
+        return out
+
+    return {
+        "revenue_growth_yoy": _series("Revenue_Growth_YoY"),
+        "net_income_growth_yoy": _series("NetIncome_Growth_YoY"),
+        "net_margin": _series("Net_Margin"),
+        "operating_margin": _series("Operating_Margin"),
+        "debt_to_equity": _series("Debt_to_Equity"),
+        "free_cash_flow": _series("Free_Cash_Flow"),
+    }
+
+
+def enrich_top_technical_signals(
+    top_signals: list[Dict[str, Any]],
+    tech_snapshot: Mapping[str, Any],
+) -> list[Dict[str, Any]]:
+    """
+    Attach data-backed descriptions so top technical signals are not purely textual.
+    """
+    out: list[Dict[str, Any]] = []
+    trend = str(tech_snapshot.get("trend_regime") or "unknown")
+    rsi = _float_or_none(tech_snapshot.get("rsi_14"))
+    macd = _float_or_none(tech_snapshot.get("macd"))
+    macd_sig = _float_or_none(tech_snapshot.get("macd_signal"))
+    dist_high = _float_or_none(tech_snapshot.get("dist_to_high_52w"))
+
+    for row in top_signals:
+        label = str(row.get("label") or "")
+        item = dict(row)
+        if label == "trend_regime":
+            item["thesis"] = f"Trend regime currently classified as {trend}."
+            item["evidence"] = f"dist_to_high_52w={dist_high:.3f}" if dist_high is not None else "Trend classification from moving-average structure."
+        elif label == "momentum_rsi":
+            item["thesis"] = "Momentum signal from RSI14."
+            item["evidence"] = f"rsi_14={rsi:.2f}" if rsi is not None else "RSI unavailable."
+        elif label == "macd_confirmation":
+            item["thesis"] = "MACD line versus signal line confirms or weakens momentum."
+            if macd is not None and macd_sig is not None:
+                item["evidence"] = f"macd={macd:.4f}, macd_signal={macd_sig:.4f}, spread={macd - macd_sig:.4f}"
+            else:
+                item["evidence"] = "MACD data unavailable."
+        out.append(item)
+    return out
+
+
+def build_technical_snapshot_compact(tech_snapshot: Mapping[str, Any]) -> Dict[str, Any]:
+    """Compact technical snapshot for scorecard: last values + summary text. Used for technical_setup and liquidity."""
+    if not tech_snapshot:
+        return {"technical_summary_text": "No technical data available."}
+    keys = [
+        "last_close", "ma_50", "ma_200", "sma_20", "ema_20",
+        "rsi_14", "macd", "macd_signal", "macd_hist",
+        "stoch_k", "stoch_d", "williams_r", "atr_14", "bb_width", "bb_pos",
+        "volume_last", "avg_volume_20", "support", "resistance_near", "resistance_major",
+        "data_confidence",
+    ]
+    compact = {k: tech_snapshot.get(k) for k in keys if tech_snapshot.get(k) is not None}
+    compact["technical_summary_text"] = tech_snapshot.get("technical_summary_text") or "No summary."
+    return compact
+
+
+def build_analysis_packet(
+    *,
+    ticker: str,
+    analysis_date: str,
+    annual_out: Dict[str, Any],
+    quarterly_out: Dict[str, pd.DataFrame],
+    tech_snapshot: Dict[str, Any],
+) -> Dict[str, Any]:
+    metrics_df = annual_out.get("metrics", pd.DataFrame())
     meta_df = annual_out.get("meta", pd.DataFrame())
-    archetype_obj = classify_archetype(meta_df, annual_metrics)
-    archetype_json = safe_json_dumps(archetype_to_dict(archetype_obj))
-
-    # ---------- Catalyst inputs (for Prompt 1D) ----------
+    company_context = build_company_context(meta_df, ticker)
+    archetype = archetype_to_dict(classify_archetype(meta_df, metrics_df))
+    annual_trend = summarize_annual_trend(metrics_df)
+    quarterly_delta = summarize_quarterly_delta(quarterly_out)
+    valuation_packet = build_valuation_packet(metrics_df, company_context, ticker)
     catalyst_inputs = build_catalyst_inputs(
         ticker=ticker,
         analysis_date=analysis_date,
         fundamentals=annual_out,
-        tech_snapshot=tech_snap,
+        tech_snapshot=tech_snapshot,
     )
-    catalyst_inputs_json = safe_json_dumps(catalyst_inputs)
+    technical_snapshot_compact = build_technical_snapshot_compact(tech_snapshot)
 
-    # ---------- Build prompts ----------
-    company_hint = f"\nCompany hint: {company_name}\n" if company_name else ""
+    return {
+        "ticker": ticker,
+        "analysis_date": analysis_date,
+        "company_context": company_context,
+        "archetype": archetype,
+        "annual_trend_summary": annual_trend,
+        "quarterly_delta_summary": quarterly_delta,
+        "technical_regime": {
+            "trend_regime": tech_snapshot.get("trend_regime"),
+            "volatility_regime": tech_snapshot.get("volatility_regime"),
+            "dist_to_high_52w": tech_snapshot.get("dist_to_high_52w"),
+            "dist_to_low_52w": tech_snapshot.get("dist_to_low_52w"),
+            "return_1m": tech_snapshot.get("return_1m"),
+            "return_3m": tech_snapshot.get("return_3m"),
+        },
+        "technical_snapshot_compact": technical_snapshot_compact,
+        "valuation_packet": valuation_packet,
+        "risk_inputs": {
+            "debt_to_equity_last": annual_trend.get("debt_to_equity_last"),
+            "free_cash_flow_last": annual_trend.get("free_cash_flow_last"),
+            "net_income_growth_yoy_last": annual_trend.get("net_income_growth_yoy_last"),
+            "qoq_revenue_change": quarterly_delta.get("qoq_revenue_change"),
+            "trend_regime": tech_snapshot.get("trend_regime"),
+        },
+        "catalyst_summary": {
+            "news_enabled": bool(catalyst_inputs.get("news_enabled")),
+            "company_news": catalyst_inputs.get("company_news", []),
+            "fundamental_inferred": catalyst_inputs.get("fundamental_inferred", []),
+            "technical_inferred": catalyst_inputs.get("technical_inferred", []),
+            "industry_candidates": catalyst_inputs.get("industry_candidates", []),
+        },
+    }
 
-    p1a = (company_hint + PROMPT_1A).format(
-        TICKER=ticker,
-        ANNUAL_BALANCE_SHEET_DATA=annual_bs_str,
-        ANNUAL_INCOME_STATEMENT_DATA=annual_is_cf_str,
-        ANNUAL_METRICS_DATA=annual_metrics_str,
-    )
-    p1b = (company_hint + PROMPT_1B).format(
-        TICKER=ticker,
-        QUARTERLY_BALANCE_SHEET_DATA=q_bs_str,
-        QUARTERLY_INCOME_STATEMENT_DATA=q_is_str,
-    )
-    p1c = PROMPT_1C.format(
-        TICKER=ticker,
-        ANALYSIS_DATE=analysis_date,
-        TECHNICAL_SUMMARY_TEXT=technical_summary_text,
-        TECHNICAL_SNAPSHOT_JSON=tech_snap_json,
-    )
-    p1d = PROMPT_1D_CATALYSTS.format(
-        TICKER=ticker,
-        COMPANY_NEWS_JSON=safe_json_dumps(catalyst_inputs.get("company_news", [])),
-        FUNDAMENTAL_INFERRED_JSON=safe_json_dumps(catalyst_inputs.get("fundamental_inferred", [])),
-        TECHNICAL_INFERRED_JSON=safe_json_dumps(catalyst_inputs.get("technical_inferred", [])),
-        INDUSTRY_CANDIDATES_JSON=safe_json_dumps(catalyst_inputs.get("industry_candidates", [])),
-    )
 
-    # ---------- LLM client ----------
-    cfg = load_llm_config()
-
+def _model_name_from_cfg(cfg: Any) -> str:
     if cfg.backend == "openai":
+        return cfg.openai_model
+    return cfg.gemini_model
+
+
+def create_runner() -> tuple[Any, str, str]:
+    cfg = load_llm_config()
+    if cfg.backend == "openai":
+        if OpenAI is None:
+            raise RuntimeError("openai package is required when LLM_BACKEND=openai")
         client = OpenAI(base_url=cfg.openai_base_url, api_key=cfg.openai_api_key)
-        runner = OpenAIRunner(model=cfg.openai_model, client=client)
+        runner = OpenAIRunner(model=cfg.openai_model, client=client, system_prompt=SYSTEM_PROMPT_V2)
     elif cfg.backend == "gemini-vertex":
-        # Vertex AI in your GCP project (e.g. to consume education credits).
-        # Authentication is via ADC, configured outside this script:
-        #   gcloud auth application-default login
+        if genai is None:
+            raise RuntimeError("google-genai package is required for Gemini backends")
         if not cfg.gcp_project:
             raise ValueError("GOOGLE_CLOUD_PROJECT must be set when LLM_BACKEND=gemini-vertex")
         client = genai.Client(vertexai=True, project=cfg.gcp_project, location=cfg.gcp_location)
-        runner = GeminiRunner(model=cfg.gemini_model, client=client)
+        runner = GeminiRunner(model=cfg.gemini_model, client=client, system_prompt=SYSTEM_PROMPT_V2)
     else:
-        # Default: Gemini API via API key (GEMINI_API_KEY)
+        if genai is None:
+            raise RuntimeError("google-genai package is required for Gemini backends")
         client = genai.Client()
-        runner = GeminiRunner(model=cfg.gemini_model, client=client)
+        runner = GeminiRunner(model=cfg.gemini_model, client=client, system_prompt=SYSTEM_PROMPT_V2)
+    return runner, cfg.backend, _model_name_from_cfg(cfg)
 
-    # ---------- 1A/1B/1C/1D parallel ----------
-    results: Dict[str, Any] = {}
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        futs = {
-            ex.submit(runner.run_json, p1a, 0.2): "1A",
-            ex.submit(runner.run_json, p1b, 0.2): "1B",
-            ex.submit(runner.run_json, p1c, 0.2): "1C",
-            ex.submit(runner.run_json, p1d, 0.2): "1D",
-        }
-        for fut in as_completed(futs):
-            tag = futs[fut]
-            try:
-                results[tag] = fut.result()
-            except Exception as e:
-                results[tag] = {"error": str(e), "stage": tag}
 
-    # ---------- Prompt 2 synthesis ----------
-    p2 = (company_hint + PROMPT_2).format(
-        TICKER=ticker,
-        ARCHETYPE_JSON=archetype_json,
-        OUTPUT_FROM_PROMPT_1A=safe_json_dumps(results.get("1A", {})),
-        OUTPUT_FROM_PROMPT_1B=safe_json_dumps(results.get("1B", {})),
-        OUTPUT_FROM_PROMPT_1C=safe_json_dumps(results.get("1C", {})),
-        OUTPUT_FROM_PROMPT_1D=safe_json_dumps(results.get("1D", {})),
+def generate_report_v2(
+    ticker: str,
+    *,
+    analysis_date: Optional[str] = None,
+    report_mode: str = "lean",
+    save: bool = True,
+    output_dir: Optional[Path] = None,
+) -> tuple[Dict[str, Any], Optional[Path]]:
+    ticker = ticker.strip().upper()
+    if not ticker:
+        raise ValueError("Ticker cannot be empty.")
+    mode = str(report_mode or "lean").strip().lower()
+    if mode not in {"lean", "full"}:
+        mode = "lean"
+
+    as_of_date = analysis_date or os.getenv("ANALYSIS_DATE") or dt.date.today().isoformat()
+    annual_out = fund_mod.fetch_annual_5_periods_with_metrics(ticker, periods=5)
+    quarterly_out = fetch_quarterly_5_periods(ticker, periods=5)
+    tech_snapshot = fetch_technical_snapshot(ticker, as_of_date)
+    packet = build_analysis_packet(
+        ticker=ticker,
+        analysis_date=as_of_date,
+        annual_out=annual_out,
+        quarterly_out=quarterly_out,
+        tech_snapshot=tech_snapshot,
     )
-    final_report = runner.run_json(p2, temperature=0.2)
+    valuation_flag = build_valuation_flag(packet.get("valuation_packet", {}))
+    risk_flags = build_risk_flags(
+        annual_out.get("metrics", pd.DataFrame()),
+        tech_snapshot,
+        packet.get("quarterly_delta_summary", {}),
+        archetype_type=(packet.get("archetype") or {}).get("type"),
+    )
 
-    # Use structured dimensions (if present) to derive a stable rating,
-    # then normalize aliases / fallbacks.
-    try:
-        if isinstance(final_report, dict) and final_report.get("rating_dimensions"):
-            final_report.setdefault("rating_raw_model", final_report.get("rating"))
-            final_report["rating"] = rating_from_dimensions(final_report)
-    except Exception:
-        # If anything goes wrong, fall back to whatever the model provided.
-        pass
+    runner, backend_name, model_name = create_runner()
+    score_prompt = SCORECARD_PROMPT_V2.format(
+        TICKER=ticker,
+        ANALYSIS_PACKET_JSON=safe_json_dumps(packet),
+    )
+    llm_score = runner.run_json(score_prompt, temperature=0.1)
+    scorecard = normalize_scorecard(llm_score.get("scorecard") if isinstance(llm_score, dict) else {})
 
-    normalize_rating(final_report)
-    normalize_price_target_matrix(final_report)
+    aggregate_score = compute_aggregate_score(scorecard)
+    recommendation = recommendation_from_score(aggregate_score)
+    company_name = str((packet.get("company_context") or {}).get("shortName") or ticker)
 
-    # Basic schema validation (non-fatal, but surfaces issues early)
-    validation_errors: list = []
-    try:
-        validation_errors = validate_report(final_report)
-    except Exception:
-        validation_errors = ["validate_report raised an exception"]
+    report: Dict[str, Any] = {
+        "report_version": REPORT_VERSION,
+        "report_metadata": {
+            "ticker": ticker,
+            "company": company_name,
+            "as_of_date": as_of_date,
+            "model_name": model_name,
+            "llm_backend": backend_name,
+            "prompt_version": PROMPT_VERSION,
+            "report_mode": mode,
+            "news_enabled": bool((packet.get("catalyst_summary") or {}).get("news_enabled", False)),
+        },
+        "scorecard": scorecard,
+        "aggregate_score": aggregate_score,
+        "recommendation": recommendation,
+        "valuation_flag": valuation_flag,
+        "risk_flags": risk_flags,
+    }
 
-    # Attach archetype and catalyst inputs for auditability
-    final_report.setdefault("archetype", {})
-    final_report["archetype"] = json.loads(archetype_json)
-    final_report.setdefault("catalyst_inputs_debug", catalyst_inputs)
-    # Always write validation so the report structure is consistent (errors may be empty)
-    final_report.setdefault("validation", {})
-    final_report["validation"]["errors"] = validation_errors
+    if mode == "full":
+        full_prompt = FULL_REPORT_PROMPT_V2.format(
+            TICKER=ticker,
+            LEAN_REPORT_JSON=safe_json_dumps(report),
+            ANALYSIS_PACKET_JSON=safe_json_dumps(packet),
+        )
+        full_result = runner.run_json(full_prompt, temperature=0.0)
+        if isinstance(full_result, dict):
+            if isinstance(full_result.get("overall_outlook"), str):
+                report["overall_outlook"] = full_result["overall_outlook"]
+            if isinstance(full_result.get("price_target_matrix"), dict):
+                matrix = dict(full_result["price_target_matrix"])
+                if "consensus" not in matrix and "base" in matrix:
+                    matrix["consensus"] = matrix["base"]
+                report["price_target_matrix"] = matrix
+        report.update(build_top_signal_views(scorecard))
+        report["top_technical_signals"] = enrich_top_technical_signals(
+            report.get("top_technical_signals", []),
+            tech_snapshot=tech_snapshot,
+        )
+        report["top_indicator_chart_data"] = fetch_top_indicator_chart_data(ticker, as_of_date)
+        report["fundamental_indicator_chart_data"] = build_fundamental_indicator_chart_data(
+            annual_out.get("metrics", pd.DataFrame())
+        )
 
-    # Annotate report with the LLM backend/model used for full transparency
-    meta = final_report.get("report_metadata") or {}
-    meta["llm_backend"] = cfg.backend
-    if cfg.backend == "openai":
-        meta["llm_model"] = cfg.openai_model
-    else:
-        meta["llm_model"] = cfg.gemini_model
-    final_report["report_metadata"] = meta
+    report["validation"] = validate_v2_report(report, report_mode=mode)
 
-    # ---------- Save ----------
-    out_path = build_unique_output_path(ticker, analysis_date)
-    out_path.write_text(json.dumps(final_report, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path: Optional[Path] = None
+    if save:
+        suffix = "full_report" if mode == "full" else "report"
+        out_path = build_unique_output_path(ticker, as_of_date, suffix=suffix, output_dir=output_dir)
+        out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    print("\n=== FINAL REPORT (JSON) ===")
-    print(json.dumps(final_report, ensure_ascii=False, indent=2))
-    print(f"\nSaved to: {out_path}")
+    return report, out_path
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="TickerAnalysis v2: lean scan report + optional full report.")
+    parser.add_argument("ticker", nargs="?", help="Ticker symbol, e.g. AAPL")
+    parser.add_argument("--report-mode", choices=["lean", "full"], default=os.getenv("REPORT_MODE", "lean"))
+    parser.add_argument("--no-save", action="store_true", help="Do not write JSON file")
+    args = parser.parse_args()
+
+    ticker = (args.ticker or input("Enter ticker (e.g., AAPL): ").strip()).upper()
+    report, out_path = generate_report_v2(
+        ticker,
+        report_mode=args.report_mode,
+        save=not args.no_save,
+    )
+
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    if out_path:
+        print(f"\nSaved to: {out_path}")
 
 
 if __name__ == "__main__":

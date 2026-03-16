@@ -1,0 +1,84 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "AMAT",
+    "company": "Applied Materials, Inc.",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Experienced executive team successfully managing a mature, large-cap compounder in a highly technical industry.",
+      "evidence": "Led by CEO Gary Dickerson and supported by a dedicated CTO and CFO, indicating a strong focus on technical innovation and financial discipline."
+    },
+    "competitive_advantage": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Deeply entrenched market position with a comprehensive suite of semiconductor manufacturing equipment and services.",
+      "evidence": "Broad portfolio covering etch, deposition, CMP, metrology, and packaging, serving a global customer base across the US, Asia, and Europe."
+    },
+    "growth_perspective": {
+      "score": 2,
+      "confidence": "high",
+      "thesis": "Modest top-line expansion offset by slight YoY earnings contraction, though recent quarterly momentum is positive.",
+      "evidence": "YoY revenue growth of 4.39% and YoY net income decline of 2.49%, contrasted by QoQ revenue growth of 3.12% and QoQ net income growth of 6.80%."
+    },
+    "balance_sheet_health": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "Robust financial resilience characterized by low leverage and strong operating profitability.",
+      "evidence": "Debt-to-equity ratio of 0.345, operating margin of 29.86%, and net margin of 24.67%."
+    },
+    "business_segment_quality": {
+      "score": 4,
+      "confidence": "high",
+      "thesis": "High-quality revenue mix balancing cyclical capital equipment sales with recurring service and software streams.",
+      "evidence": "Operations split between Semiconductor Systems (capital equipment) and Applied Global Services (spares, upgrades, services, and software)."
+    },
+    "technical_setup": {
+      "score": 3,
+      "confidence": "medium",
+      "thesis": "Strong medium-term uptrend with recent short-term consolidation and notably low trading volume.",
+      "evidence": "Price is above 50-day and 200-day SMAs with a 3-month return of 28.09%, but trades below the 20-day SMA with MACD histogram falling and recent volume at only 0.26x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Market-implied momentum provides a supportive backdrop for continued equity appreciation.",
+      "evidence": "Price remains in a strong uptrend, holding above key moving averages (50-day at 332.87 and 200-day at 236.26)."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "medium",
+      "thesis": "Recent margin compression signals potential profitability headwinds in the near term.",
+      "evidence": "Net margin has compressed materially, showing a negative change of 6.59%."
+    }
+  },
+  "aggregate_score": 19,
+  "recommendation": "Overweight",
+  "valuation_flag": {
+    "label": "full",
+    "confidence": "medium",
+    "summary": "Multiples are above long-run market averages."
+  },
+  "risk_flags": [
+    {
+      "type": "execution_risk",
+      "severity": "low",
+      "summary": "No acute red flag from current structured inputs."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}

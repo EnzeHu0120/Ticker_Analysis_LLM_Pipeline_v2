@@ -1,0 +1,89 @@
+{
+  "report_version": "2.0",
+  "report_metadata": {
+    "ticker": "QMCO",
+    "company": "Quantum Corporation",
+    "as_of_date": "2026-03-16",
+    "model_name": "gemini-3.1-pro-preview",
+    "llm_backend": "gemini-vertex",
+    "prompt_version": "v2",
+    "report_mode": "lean",
+    "news_enabled": false
+  },
+  "scorecard": {
+    "leadership": {
+      "score": -2,
+      "confidence": "medium",
+      "thesis": "Leadership is managing a difficult transition in a pre-profit deep tech environment, but persistent losses and negative margins reflect ongoing execution challenges.",
+      "evidence": "Archetype identified as pre-profit deep tech with persistent losses; executive team includes a mix of CEO, CFO, and an Advisor."
+    },
+    "competitive_advantage": {
+      "score": 0,
+      "confidence": "medium",
+      "thesis": "The company operates in a highly commoditized storage market, though its legacy tape storage and strategic partnership for quantum security provide some niche defensibility.",
+      "evidence": "Offers a mix of unstructured data storage, video surveillance, and tape storage; strategic partnership with Entanglement, Inc. for post-quantum security."
+    },
+    "growth_perspective": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Structural revenue is in decline year-over-year, despite a recent sequential quarterly bounce.",
+      "evidence": "YoY revenue growth is -12.0% (following a previous -26.1% decline), though QoQ revenue increased by 18.9%."
+    },
+    "balance_sheet_health": {
+      "score": -4,
+      "confidence": "high",
+      "thesis": "The balance sheet is highly distressed with negative equity, growing debt loads, and deeply negative margins.",
+      "evidence": "Debt-to-equity is -0.80 (indicating negative equity), debt grew 10.7% YoY and 26.6% QoQ, and net margins sit at -41.9%."
+    },
+    "business_segment_quality": {
+      "score": -1,
+      "confidence": "medium",
+      "thesis": "The product mix is transitioning toward software and as-a-service models, but remains heavily burdened by legacy hardware segments.",
+      "evidence": "Segments include legacy linear-tape open drives alongside newer Myriad All-Flash, Unified Surveillance Platform Software, and Quantum-as-a-Service."
+    },
+    "technical_setup": {
+      "score": -4,
+      "confidence": "high",
+      "thesis": "The stock is in a severe structural downtrend with poor liquidity and trades well below major moving averages.",
+      "evidence": "Classified as a strong downtrend; 3-month return is -44.7%; price of $5.39 is below the 50-day ($6.24) and 200-day ($8.25) moving averages; recent volume is only 0.14x the 20-day average."
+    },
+    "positive_catalysts": {
+      "score": 2,
+      "confidence": "medium",
+      "thesis": "Fundamental improvements in margin and leverage trajectories provide minor upside relief.",
+      "evidence": "Inferred catalysts show net margin improved by 2.16 and debt-to-equity decreased by 0.18 recently."
+    },
+    "negative_catalysts": {
+      "score": -3,
+      "confidence": "high",
+      "thesis": "Severe market rejection and ongoing technical breakdowns signal continued downside risk.",
+      "evidence": "Market-implied catalysts highlight a severe multi-month drawdown (-44.7% over 3 months) and price remaining trapped below key moving averages."
+    }
+  },
+  "aggregate_score": -15,
+  "recommendation": "Underweight",
+  "valuation_flag": {
+    "label": "cheap",
+    "confidence": "medium",
+    "summary": "Pre-profit profile with modest sales multiple."
+  },
+  "risk_flags": [
+    {
+      "type": "dilution_risk",
+      "severity": "medium",
+      "summary": "Losses with weak cash generation may increase financing pressure."
+    },
+    {
+      "type": "technical_breakdown_risk",
+      "severity": "medium",
+      "summary": "Price action indicates weak trend or recent breakdown risk."
+    }
+  ],
+  "validation": {
+    "schema_valid": true,
+    "score_bounds_valid": true,
+    "aggregate_matches_components": true,
+    "recommendation_matches_score": true,
+    "errors": []
+  }
+}
