@@ -1,57 +1,113 @@
 # TickerAnalysis LLM Pipeline (v2)
 
-Two-stage research workflow optimized for performance, cost control, and readability:
-
-1. **Universe Scan / Ranking (default)**  
-   Batch lean scorecard generation for many tickers.
-2. **Deep Dive / Full Report (on demand)**  
-   Extra synthesis only for selected names.
-
-Example reports are written to `outputs/`.  
-Example ranking rows are written to `score_rows/`.
+Terminal-style equity research workflow for:
+- **fast universe screening** (default)
+- **on-demand deep dives** (only for selected tickers)
 
 ---
 
-## Product workflow
+## About
 
-### Stage 1 (default): Universe Scan
-- Input: ticker list or CSV ticker column
-- Output per ticker: lean structured report
-- Output batch: sortable ranking table (`score_rows_*.csv/.json`)
-- LLM cost model: **one main LLM call per ticker**
+`TickerAnalysis LLM Pipeline` is a two-stage stock research product designed for practical buy-side style workflows:
+1. scan many names quickly,
+2. shortlist with structured evidence,
+3. deep dive only when needed.
 
-### Stage 2 (optional): Full Report
-- Triggered only when explicitly requested for selected tickers
-- Adds:
-  - `overall_outlook`
-  - `price_target_matrix` (`bear` / `base` / `bull`)
-- LLM cost model: **one extra cheaper synthesis call per selected ticker**
+It is optimized for:
+- low latency in multi-ticker runs
+- controlled model cost
+- structured outputs suitable for ranking/filtering
+- reproducible UI interactions that do **not** trigger extra inference unless explicitly requested
+
+> It works best for same-sector screens, but fully supports arbitrary mixed ticker lists as well.
 
 ---
 
-## v2 default output schema (lean)
+## High-Intensity Ongoing Updates
+
+This project is in **active, high-frequency iteration**.  
+Current focus:
+- terminal UX polish
+- stronger screener-first workflow
+- better artifact grouping and report reuse
+- quality/stability improvements for large batch scans
+
+---
+
+## Core Product Features
+
+### 1) Two-stage research pipeline
+- **Stage 1: Universe Scan / Ranking (default)**
+  - input: multiline ticker list or CSV
+  - output: lean snapshot report per ticker + ranking rows
+  - one main LLM call per ticker
+- **Stage 2: Full Report (explicit on-demand)**
+  - only triggered by user action
+  - adds `overall_outlook` and scenario `price_target_matrix`
+  - one extra synthesis call only for selected names
+
+### 2) Terminal-style Streamlit workspace
+- **Sector Screener workspace** as default landing page
+- **Ticker Detail workspace** for drill-down
+- dark-first, dense, table-first layout
+- deterministic filtering/sorting/comparison without extra model calls
+
+### 3) Structured scorecard outputs
+- exactly 8 scoring dimensions
+- bounded integer scores
+- recommendation + valuation/risk overlays
+- strict validation for lean/full output modes
+
+### 4) Scan-scoped report artifacts
+- each scan run can write into its own output subfolder
+- current scan artifacts are prioritized in detail loading
+- historical reports can still be loaded explicitly
+
+---
+
+## Screenshots
+
+### Screener controls + sidebar guidance
+![Screener controls and sidebar](docs/images/ui-scan-controls-sidebar.png)
+
+### Batch scan progress
+![Scan progress](docs/images/ui-scan-progress.png)
+
+### Results workspace (ranking/filtering)
+![Results workspace](docs/images/ui-results-workspace.png)
+
+### Multi-ticker comparison panel
+![Comparison panel](docs/images/ui-comparison.png)
+
+### Detail page - score drivers
+![Detail score drivers](docs/images/ui-detail-score-drivers.png)
+
+### Detail page - full report (conclusion first)
+![Detail full report](docs/images/ui-detail-full-report.png)
+
+### Detail page - technical context
+![Detail technical chart](docs/images/ui-detail-technical.png)
+
+---
+
+## Default Lean Output Schema
 
 Top-level fields:
 - `report_version`
 - `report_metadata`
-- `scorecard` (exactly 8 dimensions)
+- `scorecard` (8 dimensions)
 - `aggregate_score`
 - `recommendation`
 - `valuation_flag`
 - `risk_flags`
 - `validation`
 
-Excluded in lean mode:
-- `aggregate_score_pct`
-- `sector_rank`
-- `deep_dive_priority`
-- `catalyst_inputs_debug`
+Lean mode intentionally excludes verbose debug sections.
 
 ---
 
-## Scorecard design
+## Scorecard Dimensions
 
-Exact 8 dimensions:
 - `leadership`
 - `competitive_advantage`
 - `growth_perspective`
@@ -61,25 +117,24 @@ Exact 8 dimensions:
 - `positive_catalysts`
 - `negative_catalysts`
 
-Each dimension has:
-- `score` (integer, bounded by dimension)
+Each dimension includes:
+- `score`
 - `confidence` (`low|medium|high`)
 - `thesis`
 - `evidence`
 
 Score ranges:
-- First 6 dimensions: `-5..5`
+- first 6 dimensions: `-5..5`
 - `positive_catalysts`: `0..5`
 - `negative_catalysts`: `-5..0`
 
 ---
 
-## Aggregate and recommendation
+## Aggregation and Recommendation
 
-v2.0 aggregate:
-- `aggregate_score = sum(8 dimension scores)` (equal-weight now; weighting-ready implementation)
+- aggregate: `sum(8 dimension scores)` (equal-weight in v2.0; future-weight ready implementation)
 
-Recommendation mapping:
+Recommendation buckets:
 - `>= 18`: `Overweight`
 - `8..17`: `Equal-weight`
 - `-7..7`: `Hold`
@@ -88,107 +143,86 @@ Recommendation mapping:
 
 ---
 
-## News handling (cost + quality)
+## News & Catalyst Policy
 
-- Default: `ENABLE_NEWS=false`
-- If enabled, news is strictly filtered:
-  - lookback constrained to `7..14` days
-  - deduplicated
-  - noisy titles removed
-  - max `5` items
-- News is optional catalyst evidence only; it does not directly drive structural thesis.
+- default: `ENABLE_NEWS=false`
+- if enabled:
+  - short lookback window
+  - strict filtering and dedupe
+  - small capped item count
+- news is catalyst evidence only, not direct structural thesis input
 
 ---
 
-## Setup
+## Quick Start
 
-- Python 3.10+
-- Install dependencies:
+### 1) Setup
 
 ```bash
 pip install -r requirements.txt
 ```
 
-- Configure `.env` (never commit secrets):
+Copy env template:
 
 ```bash
 cp .env.example .env
 ```
 
-Key env options:
-- `LLM_BACKEND=gemini | gemini-vertex | openai`
-- `GEMINI_MODEL=...`
-- `ENABLE_NEWS=false` (default recommended)
-- `REPORT_MODE=lean` (default)
-
----
-
-## Run
-
-### Single ticker (lean default)
+### 2) Single ticker
 
 ```bash
 python llm_pipeline.py AAPL
 ```
 
-### Single ticker full mode
+Full mode:
 
 ```bash
 python llm_pipeline.py AAPL --report-mode full
 ```
 
-### Universe scan / ranking
+### 3) Universe scan
 
 ```bash
 python universe_runner.py --tickers AAPL,MSFT,NVDA
 ```
 
-or
+or CSV:
 
 ```bash
 python universe_runner.py --csv your_universe.csv --ticker-col ticker
 ```
 
----
-
-## Lightweight UI
+### 4) Terminal UI
 
 ```bash
 streamlit run streamlit_app.py
 ```
 
-UI flow:
-1. Universe Scan
-2. Ranking Table
-3. Ticker Detail Snapshot
-4. Explicit `Generate Full Report` action
-
 ---
 
-## Repo layout (v2)
+## Repository Structure
 
 | Path | Purpose |
 |------|--------|
-| `fundamental_pipeline.py` | Reused fundamental fetch + engineered metrics |
-| `technical_pipeline.py` | Reused technical indicators + regime snapshot |
-| `archetype.py` | Reused archetype classification |
-| `catalyst_pipeline.py` | Catalyst/event inputs; news optional and filtered |
-| `llm_config.py` | Central backend/model config |
-| `report_schema.py` | v2 schema constants, score bounds, aggregation helpers |
-| `prompt_templates.py` | v2 prompt templates (lean scorecard + full extension) |
-| `llm_clients.py` | LLM JSON runners (Gemini/OpenAI) |
-| `report_validation.py` | v2 lean/full schema validation |
-| `llm_pipeline.py` | v2 single-ticker orchestration entry point |
-| `universe_runner.py` | Batch scan/ranking runner + score_rows persistence |
-| `streamlit_app.py` | Lightweight ranking/deep-dive UI |
-| `outputs/` | Per-ticker reports |
-| `score_rows/` | Persistent ranking rows |
+| `llm_pipeline.py` | v2 orchestration entry (lean + optional full) |
+| `universe_runner.py` | batch scan runner |
+| `streamlit_app.py` | Streamlit launcher |
+| `streamlit_terminal_ui.py` | terminal-style screener/detail UI |
+| `report_schema.py` | schema constants + score helpers |
+| `report_validation.py` | output validation |
+| `prompt_templates.py` | prompt templates |
+| `llm_clients.py` | model client wrappers |
+| `catalyst_pipeline.py` | catalyst/event input layer |
+| `fundamental_pipeline.py` | financial metrics pipeline |
+| `technical_pipeline.py` | technical snapshot and features |
+| `archetype.py` | archetype classification |
+| `outputs/` | report artifacts |
+| `docs/images/` | README screenshots |
 
 ---
 
-## Migration notes
+## Notes
 
-- Replaced multi-step 1A/1B/1C/1D+2 default path with compact v2 packet + one main scorecard call.
-- Default workflow is now scan/ranking first; full report is opt-in.
-- Validation now enforces v2 scorecard bounds, aggregate/recommendation consistency, valuation/risk schemas, and mode-specific checks.
-- `fundamental_pipeline.py`, `technical_pipeline.py`, `archetype.py`, and `llm_config.py` are preserved and reused.
+- Filtering, sorting, comparison, and tab switching are UI-side operations only.
+- Full report generation remains explicit and on-demand.
+- This repository will continue to receive frequent product and UX updates.
