@@ -19,7 +19,7 @@ It is optimized for:
 - structured outputs suitable for ranking/filtering
 - reproducible UI interactions that do **not** trigger extra inference unless explicitly requested
 
-> It works best for same-sector screens, but fully supports arbitrary mixed ticker lists as well.
+> It works best for same-sector screens or portfolio analysis.
 
 ---
 
